@@ -1,6 +1,6 @@
 {
-  "version": "2617aa1cb5241feb",
-  "generated": "2026-06-10T17:50:46.354Z",
+  "version": "a453d1568ab555b8",
+  "generated": "2026-06-10T19:14:16.069Z",
   "categories": [
     "adult",
     "gambling",
@@ -12,14 +12,14 @@
     "custom"
   ],
   "counts": {
-    "total": 5818853,
+    "total": 5819139,
     "dnrTier": 500000,
     "rules": 9154
   },
   "chunks": [
     {
       "file": "000.json",
-      "sha256": "076078a3e0d4d560a957936e2a4fabfd868ddb95759db76f728fb6735c296aac",
+      "sha256": "f486435165157462dfc191418f90777c8a8e250d70f4592394966afde60496d6",
       "ruleIdStart": 1,
       "ruleCount": 500,
       "maxRules": 500,
@@ -27,7 +27,7 @@
     },
     {
       "file": "001.json",
-      "sha256": "8c61d684aeb2b1a5122068e8a663b41daaa70cd14f044667f540b4b7ddddb221",
+      "sha256": "a62e7b22ff1530dcd2902a678c2255a96a97f2d370dd4f980539f806c4f2bbb1",
       "ruleIdStart": 501,
       "ruleCount": 500,
       "maxRules": 500,
@@ -35,11 +35,11 @@
     },
     {
       "file": "002.json",
-      "sha256": "eb2428f2ff5dc176c2eaf72c963374de0a0e661411108e32d2e9cf30128d9333",
+      "sha256": "ae6d6e964fee032789525abeded673ed7c02d0ef176f245b0fd29559068027f2",
       "ruleIdStart": 1001,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 28147
+      "domains": 28153
     },
     {
       "file": "003.json",
@@ -163,20 +163,20 @@
     },
     {
       "file": "018.json",
-      "sha256": "deb71964e07101cde2855e79b694aeaa3cfff8b61d79a8f6c0be9e6f90d58aa3",
+      "sha256": "029565a5c13ef99f1b515cf5ec974930b1d255064562bc6e15d00118a9851834",
       "ruleIdStart": 9001,
       "ruleCount": 154,
       "maxRules": 500,
-      "domains": 7714
+      "domains": 7708
     }
   ],
   "tail": {
     "file": "tail.bin",
-    "sha256": "b54357ad3bd9c3c60f6ffc8a5aec86e394525ea7cc60fffbafbce3791a5ae472",
-    "count": 5818853
+    "sha256": "b254d993873e8d9629f43cdbd91d45bc0acca706c2a4746d0e01060c44f06cac",
+    "count": 5819139
   },
   "cats": {
     "file": "cats.bin",
-    "sha256": "b5098fe45462057d0ee5b123093497842f58e3d4ef55d6a456b3ebbb0772d44d"
+    "sha256": "a4677397b575538e6ecaeea3d853e068ff521366dc28587920a5847d2257a337"
   }
 }
