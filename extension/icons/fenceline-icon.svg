@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 230" role="img" aria-labelledby="title desc">
+  <title id="title">Fenceline icon</title>
+  <desc id="desc">A cropped vector fence icon with a rust-red blocked-content badge.</desc>
+
+  <g id="fenceline-icon">
+    <path fill="#20303A" d="M22 0H50V230H22C9.85 230 0 220.15 0 208V22C0 9.85 9.85 0 22 0Z"/>
+    <rect fill="#20303A" x="62" y="0" width="48" height="230"/>
+    <rect fill="#20303A" x="120" y="0" width="48" height="230"/>
+    <path fill="#20303A" d="M180 0H208C220.15 0 230 9.85 230 22V208C230 220.15 220.15 230 208 230H180V0Z"/>
+    <rect fill="#B6452C" x="0" y="96" width="230" height="38"/>
+    <circle fill="#F6F3EC" cx="115" cy="115" r="66"/>
+    <circle fill="#B6452C" cx="115" cy="115" r="52"/>
+    <rect fill="#F6F3EC" x="87" y="108.5" width="56" height="13" rx="6.5"/>
+  </g>
+</svg>

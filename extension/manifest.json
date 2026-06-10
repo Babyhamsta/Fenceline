@@ -4,6 +4,15 @@
   "version": "1.0.0",
   "minimum_chrome_version": "121",
   "description": "Self-hosted, on-device CIPA content filtering for managed Chromebooks. Blocks on every network, logs blocked attempts only, costs nothing to run.",
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Fenceline",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
   "background": {
     "service_worker": "sw.js",
     "type": "module"

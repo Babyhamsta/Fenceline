@@ -32,9 +32,7 @@ async function render() {
     ? new Date(status.listGenerated).toLocaleDateString()
     : "—";
   document.getElementById("st-sync").textContent = fmtDate(status.lastFullSync);
-  document.getElementById("st-engine").textContent = status.ready
-    ? `active (${status.tailSize.toLocaleString()} domains in memory)`
-    : "not loaded";
+  document.getElementById("st-engine").textContent = status.ready ? "active" : "not loaded";
   document.getElementById("st-total").textContent = (statsCache.total || 0).toLocaleString();
 
   // Policy-gated controls
@@ -140,15 +138,23 @@ document.getElementById("clear").addEventListener("click", async () => {
 });
 
 document.getElementById("force-sync").addEventListener("click", async () => {
+  const btn = document.getElementById("force-sync");
   const msgEl = document.getElementById("sync-msg");
+  btn.disabled = true;
   msgEl.textContent = "Checking…";
-  const res = await send({ type: "forceSync" });
-  msgEl.textContent = res.synced
-    ? `Updated to ${String(res.version).slice(0, 12)} (${res.total.toLocaleString()} domains).`
-    : res.error
-      ? `Failed: ${res.error}`
-      : `No update applied (${res.reason}).`;
-  render();
+  try {
+    const res = await send({ type: "forceSync" });
+    msgEl.textContent = res.synced
+      ? `Updated to ${String(res.version).slice(0, 12)} (${res.total.toLocaleString()} domains).`
+      : res.reason === "cooldown"
+        ? `Just checked — try again in ${res.retryInSec}s.`
+        : res.error
+          ? `Failed: ${res.error}`
+          : `No update applied (${res.reason}).`;
+    render();
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 render();

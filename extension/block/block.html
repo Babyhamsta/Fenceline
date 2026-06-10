@@ -12,11 +12,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Page blocked</title>
+<link rel="stylesheet" href="../lib/brand.css">
 <link rel="stylesheet" href="block.css">
 </head>
 <body>
   <main class="card">
-    <div class="slats" aria-hidden="true"></div>
+    <div class="block-head">
+      <img class="logo" src="../icons/fenceline-logo.svg" alt="Fenceline">
+    </div>
+    <div class="slats" data-slats="46" aria-hidden="true"></div>
 
     <p class="tag">Blocked</p>
     <h1>This page isn't available on a school device.</h1>
@@ -46,6 +50,7 @@
       <span id="contact"></span>
     </footer>
   </main>
+  <script src="../lib/brand.js"></script>
   <script src="block.js"></script>
 </body>
 </html>

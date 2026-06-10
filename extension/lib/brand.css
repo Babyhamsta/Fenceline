@@ -1,0 +1,55 @@
+/* Fenceline shared brand layer: design tokens + header system.
+   Linked by the popup, report, and block pages so branding stays
+   consistent across every surface. Local packaged asset — no network. */
+:root {
+  --paper: #f6f3ec;
+  --ink: #20303a;
+  --muted: #62707a;
+  --signal: #b6452c;
+  --line: #d8d2c4;
+  --card: #fffdf8;
+  --ok: #3f7a52;
+}
+
+.brandbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.brandbar .logo { height: 30px; width: auto; display: block; }
+
+.dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dot::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.dot.ok::before { background: var(--ok); }
+
+/* Fence pickets. Real flex children with space-between distribute evenly
+   and sit flush to BOTH ends at any width — no subpixel drift, no clipped
+   last picket (which a tiled background gradient cannot guarantee).
+   brand.js fills .slats with <i> pickets; data-slats sets the count. */
+.slats {
+  height: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  overflow: hidden;
+}
+.slats > i {
+  flex: 0 0 var(--slat-w, 6px);
+  background: var(--ink);
+  border-radius: 1px;
+}
