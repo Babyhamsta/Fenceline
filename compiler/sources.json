@@ -89,7 +89,13 @@
       "sources": [
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/games.tar.gz", "format": "ut1" },
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/educational_games.tar.gz", "format": "ut1" },
-        { "url": "https://raw.githubusercontent.com/olbat/ut1-blacklists/master/blacklists/games/domains", "format": "domains" }
+        { "url": "https://raw.githubusercontent.com/olbat/ut1-blacklists/master/blacklists/games/domains", "format": "domains" },
+        { "url": "https://raw.githubusercontent.com/Mafraysse/AdGuard_GameList-Filter/main/Domain_list_raw.txt", "format": "domains" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-roblox.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-steam.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-epicgames.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-minecraft.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-nintendo.txt", "format": "hosts" }
       ]
     }
   ]
