@@ -9,7 +9,12 @@ document.getElementById("domain").textContent = domain;
 document.getElementById("category").textContent = category;
 
 document.getElementById("back").addEventListener("click", () => {
-  if (history.length > 1) history.back();
+  // The blocked navigation leaves its own entry in history right before this
+  // block page, so a single back() lands on the blocked URL and re-triggers
+  // the block (the "two clicks" problem). Skip both entries to reach the page
+  // the user was actually on.
+  if (history.length > 2) history.go(-2);
+  else if (history.length > 1) history.back();
   else location.href = "https://www.google.com";
 });
 

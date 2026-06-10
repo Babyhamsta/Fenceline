@@ -32,9 +32,7 @@ async function render() {
     ? new Date(status.listGenerated).toLocaleDateString()
     : "—";
   document.getElementById("st-sync").textContent = fmtDate(status.lastFullSync);
-  document.getElementById("st-engine").textContent = status.ready
-    ? `active (${status.tailSize.toLocaleString()} domains in memory)`
-    : "not loaded";
+  document.getElementById("st-engine").textContent = status.ready ? "active" : "not loaded";
   document.getElementById("st-total").textContent = (statsCache.total || 0).toLocaleString();
 
   // Policy-gated controls
