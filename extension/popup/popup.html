@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fenceline</title>
+<link rel="stylesheet" href="../lib/brand.css">
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="brandbar">
+    <img class="logo" src="../icons/fenceline-logo.svg" alt="Fenceline">
+    <span class="dot" id="engine">offline</span>
+  </header>
+
+  <section class="numbers">
+    <div class="num">
+      <span class="n" id="today">0</span>
+      <span class="lbl">Blocked today</span>
+    </div>
+    <div class="num">
+      <span class="n" id="total">0</span>
+      <span class="lbl">All-time</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Top categories</h2>
+    <div id="cat-bars" class="bars"></div>
+  </section>
+
+  <section class="sync">
+    <div><span class="k">List</span><span class="v" id="version">—</span></div>
+    <div><span class="k">Domains</span><span class="v" id="domains">—</span></div>
+    <div><span class="k">Last sync</span><span class="v" id="lastsync" title="">never</span></div>
+    <div><span class="k">Last check</span><span class="v" id="lastcheck" title="">never</span></div>
+  </section>
+
+  <footer>
+    <button id="report" type="button">Open full report</button>
+  </footer>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

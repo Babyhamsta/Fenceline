@@ -1,0 +1,63 @@
+* { box-sizing: border-box; }
+
+body {
+  width: 320px;
+  margin: 0;
+  padding: 14px 16px 16px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.brandbar { margin-bottom: 14px; }
+
+.numbers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.num {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.num .n { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.num:first-child .n { color: var(--signal); }
+.num .lbl { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+
+h2 { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 16px 0 8px; }
+
+.bars { display: grid; gap: 6px; }
+.bar-row { display: grid; grid-template-columns: 78px 1fr 34px; align-items: center; gap: 8px; }
+.bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.bar-track { background: var(--card); border: 1px solid var(--line); border-radius: 3px; height: 14px; overflow: hidden; }
+.bar-fill { background: var(--ink); height: 100%; min-width: 2px; }
+.bar-row:first-child .bar-fill { background: var(--signal); }
+.bar-count { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.empty { color: var(--muted); font-size: 12px; }
+
+.sync {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  display: grid;
+  gap: 6px;
+}
+.sync div { display: flex; justify-content: space-between; gap: 12px; }
+.sync .k { color: var(--muted); }
+.sync .v { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+footer { margin-top: 14px; }
+button {
+  width: 100%;
+  font: inherit;
+  font-weight: 600;
+  background: var(--ink);
+  color: var(--card);
+  border: 0;
+  border-radius: 6px;
+  padding: 9px;
+  cursor: pointer;
+}
+button:hover { background: #31454f; }
+button:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }
