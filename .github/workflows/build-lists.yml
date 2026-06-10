@@ -1,0 +1,58 @@
+name: Build filter lists
+
+on:
+  schedule:
+    - cron: "17 9 */2 * *" # every 2 days, off the top of the hour
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "compiler/**"
+      - "lists/**"
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Download Tranco top-1M ranking (best effort)
+        run: |
+          mkdir -p data
+          curl -fsSL --retry 3 -o /tmp/tranco.zip https://tranco-list.eu/top-1m.csv.zip \
+            && unzip -o /tmp/tranco.zip -d /tmp/tranco \
+            && mv /tmp/tranco/top-1m.csv data/tranco.csv \
+            || echo "Tranco unavailable — Tier 1 will fill by category priority."
+
+      - name: Compile lists
+        run: node compiler/compile.mjs
+
+      - name: Skip publish if content unchanged
+        id: diff
+        run: |
+          NEW_VERSION=$(node -p "require('./dist/meta.json').version")
+          OLD_VERSION=$(curl -fsSL "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/lists/meta.json" 2>/dev/null | node -p "try{JSON.parse(require('fs').readFileSync(0)).version}catch(e){''}" || echo "")
+          echo "new=$NEW_VERSION old=$OLD_VERSION"
+          if [ "$NEW_VERSION" = "$OLD_VERSION" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to gh-pages
+        if: steps.diff.outputs.changed == 'true'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          destination_dir: lists
+          publish_branch: gh-pages
+          keep_files: false
+          commit_message: "lists: ${{ github.run_id }}"
