@@ -1,12 +1,3 @@
-:root {
-  --paper: #f6f3ec;
-  --ink: #20303a;
-  --muted: #62707a;
-  --signal: #b6452c;
-  --line: #d8d2c4;
-  --card: #fffdf8;
-}
-
 * { box-sizing: border-box; margin: 0; }
 
 body {
@@ -18,11 +9,9 @@ body {
   padding: 0 24px 64px;
 }
 
-.slats {
-  height: 10px;
-  margin: 0 -24px 28px;
-  background: repeating-linear-gradient(90deg, var(--ink) 0 12px, transparent 12px 19px);
-}
+.brandbar.topbar { padding-top: 24px; }
+.brandbar.topbar .logo { height: 26px; }
+.slats { margin: 18px -24px 28px; }
 
 .head-row { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; }
 
