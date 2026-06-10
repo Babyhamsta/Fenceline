@@ -15,7 +15,11 @@
         { "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt", "format": "domains" },
         { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/porn/sinfonietta/hosts", "format": "hosts" },
         { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/porn/clefspeare13/hosts", "format": "hosts" },
-        { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/porn/tiuxo/hosts", "format": "hosts" }
+        { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/porn/tiuxo/hosts", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/4skinSkywalker/Anti-Porn-HOSTS-File/master/HOSTS.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_nsfw.txt", "format": "domains" },
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/mixed_adult.tar.gz", "format": "ut1" },
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/lingerie.tar.gz", "format": "ut1" }
       ]
     },
     {
@@ -59,7 +63,10 @@
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/strict_redirector.tar.gz", "format": "ut1" },
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/proxy.tar.gz", "format": "ut1" },
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/vpn.tar.gz", "format": "ut1" },
-        { "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/doh-vpn-proxy-bypass-onlydomains.txt", "format": "domains" }
+        { "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/doh-vpn-proxy-bypass-onlydomains.txt", "format": "domains" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/unifiedVpnLists.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/dibdot/DoH-IP-blocklists/master/doh-domains.txt", "format": "domains" },
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/remote-control.tar.gz", "format": "ut1" }
       ]
     },
     {
@@ -68,7 +75,12 @@
       "sources": [
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/social_networks.tar.gz", "format": "ut1" },
         { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-tiktok.txt", "format": "hosts" },
-        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-snapchat.txt", "format": "hosts" }
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-snapchat.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-facebook.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-reddit.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-discord.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-telegram.txt", "format": "hosts" },
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/chat.tar.gz", "format": "ut1" }
       ]
     },
     {

@@ -133,7 +133,10 @@ and share-alike). The authoritative list lives in
 | [Sinfonietta/hostfiles](https://github.com/Sinfonietta/hostfiles) | hate-violence | MIT |
 | [arkynx/blocklists](https://github.com/arkynx/blocklists) | gambling | see repo |
 | [olbat/ut1-blacklists](https://github.com/olbat/ut1-blacklists) | drugs, games (daily UT1 mirror) | CC BY-SA |
-| [nickoppen/pihole-blocklists](https://github.com/nickoppen/pihole-blocklists) | social (TikTok, Snapchat) | see repo |
+| [nickoppen/pihole-blocklists](https://github.com/nickoppen/pihole-blocklists) | social (TikTok, Snapchat, Reddit, Discord, Telegram, Meta), proxy-bypass (VPN) | see repo |
+| [oisd](https://oisd.nl) ([sjhgvr/oisd](https://github.com/sjhgvr/oisd)) | adult (NSFW) | see repo |
+| [4skinSkywalker/Anti-Porn-HOSTS-File](https://github.com/4skinSkywalker/Anti-Porn-HOSTS-File) | adult | see repo |
+| [dibdot/DoH-IP-blocklists](https://github.com/dibdot/DoH-IP-blocklists) | proxy-bypass (DoH servers) | see repo |
 
 UT1 and HaGeZi refresh daily; the build Action re-pulls every 2 days, so the
 fleet's filter stays current with no manual list maintenance.
