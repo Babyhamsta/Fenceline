@@ -60,6 +60,14 @@
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/redirector.tar.gz", "format": "ut1" },
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/strict_redirector.tar.gz", "format": "ut1" }
       ]
+    },
+    {
+      "name": "games",
+      "comment": "Last in precedence on purpose: a domain that is both adult and games should log as adult. Blanket-blocks roblox.com, coolmathgames.com, poki.com, etc. — carve out exceptions in lists/allow.txt or the allowDomains policy. The olbat URL is a maintained GitHub mirror of the same UT1 data (redundancy if dsi.ut-capitole.fr is down).",
+      "sources": [
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/games.tar.gz", "format": "ut1" },
+        { "url": "https://raw.githubusercontent.com/olbat/ut1-blacklists/master/blacklists/games/domains", "format": "domains" }
+      ]
     }
   ]
 }

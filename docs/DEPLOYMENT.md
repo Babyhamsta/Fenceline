@@ -14,10 +14,37 @@
    (version is a content hash), and devices only download the full artifacts when the
    version changes **and** their `minDaysBetweenFullSync` throttle allows it.
 
+**Update cadences (how fast a change reaches a device):**
+
+| Channel | Cadence | Use it for |
+|---|---|---|
+| List rebuild (Action) | every 48 h (cron), or run manually | upstream list churn |
+| Device version check (`meta.json`, ~1 KB, ETag) | every `checkIntervalHours` (12 h) | noticing a new version |
+| Device full artifact download | only when version changed AND ≥ `minDaysBetweenFullSync` (7 days) since last full sync; **first install bypasses the throttle** | bulk list updates |
+| Managed policy `extraBlockDomains` / `allowDomains` | minutes (Google pushes policy) | **emergencies** |
+
+The consequence to understand: an edit to `lists/block.txt` can take up to ~7 days
+to reach a device that synced yesterday. That's by design (bandwidth), and it's why
+urgent district blocks go through the **managed policy `extraBlockDomains`**, which
+applies its own DNR rules within minutes, independent of the list pipeline. Push it
+in Admin console, then add it to `lists/block.txt` for permanence.
+
 **Bandwidth math** (GitHub Pages soft cap: 100 GB/month): at UT1-full scale the
 artifacts are roughly 35–45 MB. 300 devices × weekly full sync ≈ 50 GB/month. If you
-grow the fleet or shorten the sync interval, front the repo with jsDelivr or shorten
-the list instead.
+grow the fleet or shorten the sync interval, front the repo with a CDN (below) or
+shorten the list.
+
+**Hotlinking / other people pulling your lists:** GitHub Pages is public static
+hosting — no auth, no referrer control, and free-tier Pages requires a public repo
+anyway. You can't stop third parties from pointing their own deployments at your
+URL; the only real cost they impose is your bandwidth quota (GitHub's response to
+exceeding the soft cap is an email, not a cutoff). If it ever becomes a real
+problem: put a domain you own in front via free Cloudflare (CNAME to
+`YOUR-ORG.github.io`, cache-everything rule on `/lists/*`). Hotlinkers then hit
+Cloudflare's cache instead of your Pages quota, and you get rate-limiting/WAF
+controls and the ability to change the URL out from under freeloaders (your fleet
+follows via the `listBaseUrl` policy; theirs breaks). Don't bother with obscure
+paths — the publish workflow is in a public repo, so the path is discoverable.
 
 ## 2. Set your list URL in the extension
 
