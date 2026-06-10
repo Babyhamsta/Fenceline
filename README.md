@@ -116,8 +116,30 @@ its own list artifacts.
   service worker in that window, the last event can be lost. Counts are
   operational telemetry, not forensic evidence.
 
+## Blocklist sources & credits
+
+Fenceline compiles only free, publicly maintained domain lists, fetched fresh at
+build time so coverage tracks upstream automatically. Huge thanks to the
+maintainers below — please review and honor each project's license before
+redistributing (UT1 and its mirrors are **CC BY-SA**, which requires attribution
+and share-alike). The authoritative list lives in
+[`compiler/sources.json`](compiler/sources.json).
+
+| Project | Feeds these categories | License |
+|---|---|---|
+| [UT1 — Université Toulouse 1 Capitole](https://dsi.ut-capitole.fr/blacklists/) (Fabrice Prigent) | adult, gambling, drugs, hate-violence, malware-phishing, proxy-bypass, social, games | CC BY-SA |
+| [HaGeZi DNS Blocklists](https://github.com/hagezi/dns-blocklists) | adult (NSFW), gambling, malware-phishing (TIF), proxy-bypass (DoH/VPN) | see repo |
+| [StevenBlack/hosts](https://github.com/StevenBlack/hosts) | adult (porn extensions), gambling | MIT |
+| [Sinfonietta/hostfiles](https://github.com/Sinfonietta/hostfiles) | hate-violence | MIT |
+| [arkynx/blocklists](https://github.com/arkynx/blocklists) | gambling | see repo |
+| [olbat/ut1-blacklists](https://github.com/olbat/ut1-blacklists) | drugs, games (daily UT1 mirror) | CC BY-SA |
+| [nickoppen/pihole-blocklists](https://github.com/nickoppen/pihole-blocklists) | social (TikTok, Snapchat) | see repo |
+
+UT1 and HaGeZi refresh daily; the build Action re-pulls every 2 days, so the
+fleet's filter stays current with no manual list maintenance.
+
 ## License
 
-MIT. Upstream blocklists carry their own licenses — UT1 (Université Toulouse
-Capitole) is CC BY-SA; review the terms of any source you add to
-`compiler/sources.json`.
+Fenceline's own code is MIT — see [LICENSE](LICENSE). Upstream blocklists carry
+their own licenses; see **Blocklist sources & credits** above and review the
+terms of any source you add to `compiler/sources.json`.

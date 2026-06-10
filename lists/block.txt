@@ -2,3 +2,7 @@
 # "custom" category. Subdomains are matched automatically.
 # Example:
 # coolmathgames.com
+
+# Kids game portal not present in any upstream blocklist (UT1 games has
+# coolmathgames.com but not this sibling domain).
+coolmath4kids.com
