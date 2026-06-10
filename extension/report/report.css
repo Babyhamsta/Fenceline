@@ -9,9 +9,15 @@ body {
   padding: 0 24px 64px;
 }
 
-.brandbar.topbar { padding-top: 24px; }
-.brandbar.topbar .logo { height: 26px; }
-.slats { margin: 18px -24px 28px; }
+.brandbar.topbar { padding-top: 24px; flex-wrap: wrap; }
+.brandbar.topbar .logo { height: 44px; }
+.head-actions { flex-wrap: wrap; }
+.slats { height: 12px; margin: 14px -24px 26px; --slat-w: 5px; }
+
+@media (max-width: 560px) {
+  .head-actions { width: 100%; }
+  .head-actions button { flex: 1; }
+}
 
 .head-row { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 12px; }
 

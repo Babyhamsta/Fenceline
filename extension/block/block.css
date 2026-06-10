@@ -22,13 +22,13 @@ body {
   overflow: hidden;
 }
 
-.block-head { padding: 26px 0 18px; }
-.block-head .logo { height: 22px; width: auto; display: block; }
+.block-head { padding: 28px 0 14px; }
+.block-head .logo { height: 40px; width: auto; display: block; }
 
 /* Signature: the fenceline. A row of slats across the top of the card.
-   Height/gradient come from the shared brand.css .slats; only the
-   full-bleed margin is block-specific. */
-.slats { height: 14px; margin: 0 -40px 32px; }
+   Picket tiling comes from the shared brand.css .slats; this surface is
+   wider-pitched (fewer, chunkier pickets) and full-bleed. */
+.slats { height: 14px; margin: 0 -40px 30px; --slat-w: 6px; }
 
 .tag {
   display: inline-block;

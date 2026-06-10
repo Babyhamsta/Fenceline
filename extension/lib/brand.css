@@ -17,7 +17,7 @@
   justify-content: space-between;
   gap: 12px;
 }
-.brandbar .logo { height: 22px; width: auto; display: block; }
+.brandbar .logo { height: 30px; width: auto; display: block; }
 
 .dot {
   display: inline-flex;
@@ -37,7 +37,19 @@
 }
 .dot.ok::before { background: var(--ok); }
 
+/* Fence pickets. Real flex children with space-between distribute evenly
+   and sit flush to BOTH ends at any width — no subpixel drift, no clipped
+   last picket (which a tiled background gradient cannot guarantee).
+   brand.js fills .slats with <i> pickets; data-slats sets the count. */
 .slats {
   height: 10px;
-  background: repeating-linear-gradient(90deg, var(--ink) 0 12px, transparent 12px 19px);
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  overflow: hidden;
+}
+.slats > i {
+  flex: 0 0 var(--slat-w, 6px);
+  background: var(--ink);
+  border-radius: 1px;
 }
