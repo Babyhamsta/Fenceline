@@ -1,0 +1,4 @@
+# District-specific blocks, one domain per line. Compiled into the
+# "custom" category. Subdomains are matched automatically.
+# Example:
+# coolmathgames.com

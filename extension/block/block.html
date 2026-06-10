@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<!--
+  Fenceline block page.
+  Fork-and-edit friendly: this page is plain HTML/CSS/JS with no external
+  resources (it must render even when the network is the problem).
+  Query params: ?d=<blocked domain>&c=<category>
+  Managed policy can set schoolName / supportContact / blockMessage
+  without touching this file.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Page blocked</title>
+<link rel="stylesheet" href="block.css">
+</head>
+<body>
+  <main class="card">
+    <div class="slats" aria-hidden="true"></div>
+
+    <p class="tag">Blocked</p>
+    <h1>This page isn't available on a school device.</h1>
+
+    <dl class="facts">
+      <div>
+        <dt>Site</dt>
+        <dd class="domain" id="domain">—</dd>
+      </div>
+      <div>
+        <dt>Category</dt>
+        <dd id="category">—</dd>
+      </div>
+    </dl>
+
+    <p class="msg" id="message">
+      This site is filtered under the district's internet safety policy.
+      If you reached it by accident, just head back.
+    </p>
+
+    <div class="actions">
+      <button id="back" type="button">Go back</button>
+    </div>
+
+    <footer>
+      <span id="school"></span>
+      <span id="contact"></span>
+    </footer>
+  </main>
+  <script src="block.js"></script>
+</body>
+</html>

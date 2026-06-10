@@ -1,0 +1,4 @@
+# One domain per line. These are removed from the compiled blocklist
+# (subdomains of an allowed domain are removed too).
+# Example:
+# scholastic.com

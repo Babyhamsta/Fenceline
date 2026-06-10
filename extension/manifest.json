@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Fenceline",
+  "version": "1.0.0",
+  "minimum_chrome_version": "121",
+  "description": "Self-hosted, on-device CIPA content filtering for managed Chromebooks. Blocks on every network, logs blocked attempts only, costs nothing to run.",
+  "background": {
+    "service_worker": "sw.js",
+    "type": "module"
+  },
+  "permissions": [
+    "declarativeNetRequest",
+    "webNavigation",
+    "storage",
+    "unlimitedStorage",
+    "alarms"
+  ],
+  "storage": {
+    "managed_schema": "policy/managed_schema.json"
+  },
+  "options_page": "report/report.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

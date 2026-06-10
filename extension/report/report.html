@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fenceline — filtering report</title>
+<link rel="stylesheet" href="report.css">
+</head>
+<body>
+  <header>
+    <div class="slats" aria-hidden="true"></div>
+    <div class="head-row">
+      <h1>Fenceline</h1>
+      <div class="head-actions">
+        <button id="export-csv" type="button">Export CSV</button>
+        <button id="export-json" type="button" class="ghost">Export JSON</button>
+        <button id="clear" type="button" class="danger" hidden>Clear logs</button>
+      </div>
+    </div>
+    <p class="sub">On-device filtering report. Only blocked attempts are recorded — no browsing history.</p>
+  </header>
+
+  <section class="status" id="status">
+    <div><dt>List version</dt><dd id="st-version">—</dd></div>
+    <div><dt>Domains on list</dt><dd id="st-domains">—</dd></div>
+    <div><dt>List generated</dt><dd id="st-generated">—</dd></div>
+    <div><dt>Last sync</dt><dd id="st-sync">—</dd></div>
+    <div><dt>Engine</dt><dd id="st-engine">—</dd></div>
+    <div><dt>Lifetime blocks</dt><dd id="st-total" class="big">—</dd></div>
+  </section>
+  <p class="sync-row"><button id="force-sync" type="button" class="ghost small">Check for list update now</button> <span id="sync-msg"></span></p>
+
+  <section>
+    <h2>Blocks by category</h2>
+    <div id="cat-bars" class="bars"></div>
+  </section>
+
+  <section>
+    <h2>Daily activity <span class="dim">(last 30 days)</span></h2>
+    <div id="daily" class="daily"></div>
+  </section>
+
+  <div class="cols">
+    <section>
+      <h2>Top blocked domains</h2>
+      <table id="top-domains">
+        <thead><tr><th>Domain</th><th class="num">Blocks</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Recent blocks</h2>
+      <table id="recent">
+        <thead><tr><th>When</th><th>Domain</th><th>Category</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script src="report.js"></script>
+</body>
+</html>

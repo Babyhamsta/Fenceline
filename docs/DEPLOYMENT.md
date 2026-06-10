@@ -1,0 +1,93 @@
+# Deploying Fenceline
+
+## 1. Fork and publish lists
+
+1. Fork this repo.
+2. Edit `compiler/sources.json` if you want different upstream lists or categories
+   (max 254 categories; `custom` is reserved for `lists/block.txt`).
+3. Add district overrides to `lists/allow.txt` / `lists/block.txt`.
+4. Repo **Settings → Pages** → Source: `Deploy from a branch` → branch `gh-pages`, folder `/ (root)`.
+5. **Actions** tab → run **Build filter lists** manually once. It compiles and pushes
+   artifacts to `gh-pages/lists/`. After Pages deploys, verify:
+   `https://YOUR-ORG.github.io/fenceline/lists/meta.json`
+6. The workflow then runs daily. It only publishes when list content actually changed
+   (version is a content hash), and devices only download the full artifacts when the
+   version changes **and** their `minDaysBetweenFullSync` throttle allows it.
+
+**Bandwidth math** (GitHub Pages soft cap: 100 GB/month): at UT1-full scale the
+artifacts are roughly 35–45 MB. 300 devices × weekly full sync ≈ 50 GB/month. If you
+grow the fleet or shorten the sync interval, front the repo with jsDelivr or shorten
+the list instead.
+
+## 2. Set your list URL in the extension
+
+Either set `listBaseUrl` in the managed policy (recommended — one extension build
+works for every district), or edit the default in `extension/lib/config.js`.
+
+## 3. Publish the extension
+
+**Recommended: Chrome Web Store, unlisted.** One-time $5 developer fee, painless
+updates, no CRX signing to maintain.
+
+1. Zip the `extension/` directory contents (manifest at zip root).
+2. [Chrome Web Store developer dashboard](https://chrome.google.com/webstore/devconsole)
+   → New item → upload → visibility **Unlisted** → submit for review.
+3. Note the extension ID after publication.
+
+**Alternative: self-hosted CRX.** Pack with a persistent key
+(`chrome --pack-extension`), host the `.crx` and an update-manifest XML on your
+Pages site, and use the `id;update_url` form when force-installing. You own
+version bumps and key custody forever. Only do this if Web Store review becomes
+a problem.
+
+## 4. Force-install via Google Admin
+
+Admin console → **Devices → Chrome → Apps & extensions → Users & browsers** →
+select the **student OU** →
+
+1. Add the extension by ID (Web Store) or ID + update URL (self-hosted).
+2. Installation policy: **Force install** (users cannot remove or disable it).
+3. Click the extension → **Policy for extensions** → paste the contents of
+   `extension/policy/example_admin_policy.json`, edited for your district.
+   This is the admin control channel: list URL, allow/deny overrides, block-page
+   branding, and whether the report page's Clear/Export buttons work. Students
+   cannot read or modify managed policy.
+
+## 5. Hardening checklist (this is most of the actual security)
+
+The extension only filters Chrome on the profile it's installed in. Close the
+side doors in the same OU policy:
+
+- [ ] **Incognito mode**: Disallow (extension state/logging isn't guaranteed there).
+- [ ] **Guest mode**: Disable (guest sessions have no forced extensions).
+- [ ] **Sign-in restriction**: only `@yourdistrict.org` accounts on devices.
+- [ ] **Linux development environment (Crostini)**: Disable for students
+      (a Linux browser bypasses everything).
+- [ ] **Developer tools**: set *Never allow use of built-in developer tools*
+      (blocks inspecting/poking the extension; also the default for
+      force-installed extensions).
+- [ ] **chrome://flags**: block via URLBlocklist (`chrome://flags`).
+- [ ] **Task manager ending processes**: ChromeOS policy
+      *Do not allow users to end processes* (prevents killing the SW —
+      note Tier 1 DNR rules keep blocking even if the SW is killed).
+- [ ] Consider DNS-level backstop on the school LAN (e.g., FortiGate DNS filter)
+      for defense in depth on-network; Fenceline covers roaming.
+
+## 6. Verify on a test device
+
+1. Sign in with a student-OU test account; confirm the extension appears and
+   cannot be removed.
+2. `chrome://extensions` → Fenceline → it should show "Installed by your administrator".
+3. Wait ~2 minutes for the first sync (or open the report page — *Details →
+   Extension options* — and hit **Check for list update now**).
+4. Visit a known-blocked domain: you should get the block page with the domain
+   and category filled in.
+5. Report page should show the block under Recent blocks and in the category bars.
+
+## CIPA note
+
+Fenceline is a technology protection measure for the student fleet, but CIPA/E-Rate
+certification also requires: filtering on *staff* devices (with an
+authorized-adult disable provision), monitoring of minors' online activities, and a
+board-adopted Internet Safety Policy with a public hearing on record. Scope your
+compliance story accordingly.

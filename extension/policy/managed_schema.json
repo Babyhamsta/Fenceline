@@ -1,0 +1,51 @@
+{
+  "type": "object",
+  "properties": {
+    "listBaseUrl": {
+      "type": "string",
+      "description": "Base URL of the published list artifacts (GitHub Pages directory containing meta.json)."
+    },
+    "checkIntervalHours": {
+      "type": "integer",
+      "description": "How often to check for a new list version. Default 12."
+    },
+    "minDaysBetweenFullSync": {
+      "type": "integer",
+      "description": "Minimum days between full artifact downloads. Default 7."
+    },
+    "blockSubframes": {
+      "type": "boolean",
+      "description": "Also block embedded iframes from blocked domains. Default true."
+    },
+    "allowDomains": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "District allowlist. Overrides the blocklist. Subdomains included."
+    },
+    "extraBlockDomains": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "District-specific blocks on top of the published list."
+    },
+    "allowClearLogs": {
+      "type": "boolean",
+      "description": "Show a working Clear button on the report page. Default false."
+    },
+    "allowExport": {
+      "type": "boolean",
+      "description": "Allow CSV/JSON export from the report page. Default true."
+    },
+    "schoolName": {
+      "type": "string",
+      "description": "Shown on the block page."
+    },
+    "supportContact": {
+      "type": "string",
+      "description": "Email or phone shown on the block page for false-positive reports."
+    },
+    "blockMessage": {
+      "type": "string",
+      "description": "Custom message shown on the block page."
+    }
+  }
+}

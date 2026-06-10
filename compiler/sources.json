@@ -1,0 +1,65 @@
+{
+  "comment": "Category order = precedence (a domain in multiple lists gets the FIRST matching category) AND priority for the DNR fast tier when no Tranco ranking file is available. Dedup across all sources happens in the compiler. All raw.githubusercontent.com URLs verified live 2026-06; UT1 URLs are the long-standing documented endpoints.",
+  "dnrTier": {
+    "comment": "Tier 1: compiled into declarativeNetRequest rules (network-level block, zero flash). Capacity = maxRules * domainsPerRule, also capped by maxDomains. domainsPerRule + the compiler's 1800-byte serialization budget keep every rule under Chrome's per-rule size limit.",
+    "maxRules": 28000,
+    "domainsPerRule": 60,
+    "rulesPerChunk": 500,
+    "maxDomains": 500000
+  },
+  "categories": [
+    {
+      "name": "adult",
+      "sources": [
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/adult.tar.gz", "format": "ut1" },
+        { "url": "https://raw.githubusercontent.com/blocklistproject/Lists/master/porn.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt", "format": "domains" },
+        { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/porn/sinfonietta/hosts", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/porn/clefspeare13/hosts", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/porn/tiuxo/hosts", "format": "hosts" }
+      ]
+    },
+    {
+      "name": "gambling",
+      "sources": [
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/gambling.tar.gz", "format": "ut1" },
+        { "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/gambling-onlydomains.txt", "format": "domains" },
+        { "url": "https://raw.githubusercontent.com/blocklistproject/Lists/master/gambling.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/gambling/sinfonietta/hosts", "format": "hosts" }
+      ]
+    },
+    {
+      "name": "drugs",
+      "sources": [
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/drogue.tar.gz", "format": "ut1" },
+        { "url": "https://raw.githubusercontent.com/blocklistproject/Lists/master/drugs.txt", "format": "hosts" }
+      ]
+    },
+    {
+      "name": "hate-violence",
+      "sources": [
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/agressif.tar.gz", "format": "ut1" },
+        { "url": "https://raw.githubusercontent.com/Sinfonietta/hostfiles/master/snuff-hosts", "format": "hosts" }
+      ]
+    },
+    {
+      "name": "malware-phishing",
+      "comment": "Includes fraud/scam domains.",
+      "sources": [
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/phishing.tar.gz", "format": "ut1" },
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/malware.tar.gz", "format": "ut1" },
+        { "url": "https://raw.githubusercontent.com/blocklistproject/Lists/master/phishing.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/blocklistproject/Lists/master/malware.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/blocklistproject/Lists/master/fraud.txt", "format": "hosts" }
+      ]
+    },
+    {
+      "name": "proxy-bypass",
+      "comment": "VPN/proxy/redirector sites students use to evade filtering.",
+      "sources": [
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/redirector.tar.gz", "format": "ut1" },
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/strict_redirector.tar.gz", "format": "ut1" }
+      ]
+    }
+  ]
+}

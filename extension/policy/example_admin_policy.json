@@ -1,0 +1,13 @@
+{
+  "listBaseUrl": { "Value": "https://YOUR-ORG.github.io/fenceline/lists" },
+  "checkIntervalHours": { "Value": 12 },
+  "minDaysBetweenFullSync": { "Value": 7 },
+  "blockSubframes": { "Value": true },
+  "allowDomains": { "Value": ["scholastic.com", "khanacademy.org"] },
+  "extraBlockDomains": { "Value": ["coolmathgames.com"] },
+  "allowClearLogs": { "Value": false },
+  "allowExport": { "Value": true },
+  "schoolName": { "Value": "Example School District" },
+  "supportContact": { "Value": "techsupport@example.org" },
+  "blockMessage": { "Value": "" }
+}
