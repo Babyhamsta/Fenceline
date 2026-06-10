@@ -1,14 +1,6 @@
 /* Fenceline block page — edit freely. No external fonts or assets:
    this page must render with zero network. */
 
-:root {
-  --paper: #f6f3ec;
-  --ink: #20303a;
-  --muted: #62707a;
-  --signal: #b6452c;
-  --line: #d8d2c4;
-}
-
 * { box-sizing: border-box; margin: 0; }
 
 body {
@@ -30,16 +22,13 @@ body {
   overflow: hidden;
 }
 
-/* Signature: the fenceline. A row of slats across the top of the card. */
-.slats {
-  height: 14px;
-  margin: 0 -40px 32px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--ink) 0 16px,
-    transparent 16px 24px
-  );
-}
+.block-head { padding: 26px 0 18px; }
+.block-head .logo { height: 22px; width: auto; display: block; }
+
+/* Signature: the fenceline. A row of slats across the top of the card.
+   Height/gradient come from the shared brand.css .slats; only the
+   full-bleed margin is block-specific. */
+.slats { height: 14px; margin: 0 -40px 32px; }
 
 .tag {
   display: inline-block;
