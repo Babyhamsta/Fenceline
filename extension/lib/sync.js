@@ -129,7 +129,11 @@ export async function checkAndSync(force = false) {
   await chrome.storage.local.set({ lastCheck: Date.now() });
 
   const currentVersion = await getStoredVersion();
-  if (!force && currentVersion === meta.version) {
+  // Never re-download an identical version, even on a forced check. "Force"
+  // only bypasses the time throttle below (to pull a genuinely NEW version
+  // early) — it must not let a spammed button re-fetch tens of MB of
+  // unchanged artifacts and burn fleet bandwidth.
+  if (currentVersion === meta.version) {
     return { synced: false, reason: "up-to-date", version: meta.version };
   }
 

@@ -183,10 +183,25 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         ...st
       });
     } else if (msg.type === "forceSync") {
-      try {
-        sendResponse(await checkAndSync(true));
-      } catch (e) {
-        sendResponse({ synced: false, error: String(e) });
+      // Rate-limit manual checks so the button can't be spammed into hammering
+      // the list host. Enforced in the service worker (not just the UI) so a
+      // page reload can't bypass it.
+      const FORCE_COOLDOWN_MS = 60000;
+      const { lastForcedCheck = 0 } = await chrome.storage.local.get(["lastForcedCheck"]);
+      const since = Date.now() - lastForcedCheck;
+      if (since < FORCE_COOLDOWN_MS) {
+        sendResponse({
+          synced: false,
+          reason: "cooldown",
+          retryInSec: Math.ceil((FORCE_COOLDOWN_MS - since) / 1000)
+        });
+      } else {
+        await chrome.storage.local.set({ lastForcedCheck: Date.now() });
+        try {
+          sendResponse(await checkAndSync(true));
+        } catch (e) {
+          sendResponse({ synced: false, error: String(e) });
+        }
       }
     } else if (msg.type === "clearLogs") {
       const cfg = await getConfig();
