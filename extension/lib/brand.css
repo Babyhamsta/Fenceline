@@ -1,0 +1,43 @@
+/* Fenceline shared brand layer: design tokens + header system.
+   Linked by the popup, report, and block pages so branding stays
+   consistent across every surface. Local packaged asset — no network. */
+:root {
+  --paper: #f6f3ec;
+  --ink: #20303a;
+  --muted: #62707a;
+  --signal: #b6452c;
+  --line: #d8d2c4;
+  --card: #fffdf8;
+  --ok: #3f7a52;
+}
+
+.brandbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.brandbar .logo { height: 22px; width: auto; display: block; }
+
+.dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.dot::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.dot.ok::before { background: var(--ok); }
+
+.slats {
+  height: 10px;
+  background: repeating-linear-gradient(90deg, var(--ink) 0 12px, transparent 12px 19px);
+}
