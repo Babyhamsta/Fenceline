@@ -12,7 +12,7 @@ body {
 .brandbar.topbar { padding-top: 24px; flex-wrap: wrap; }
 .brandbar.topbar .logo { height: 44px; }
 .head-actions { flex-wrap: wrap; }
-.slats { height: 12px; margin: 14px -24px 26px; --slat-w: 5px; }
+.slats { height: 12px; margin: 14px 0 26px; --slat-w: 5px; }
 
 @media (max-width: 560px) {
   .head-actions { width: 100%; }

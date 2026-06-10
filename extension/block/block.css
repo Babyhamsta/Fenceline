@@ -28,7 +28,7 @@ body {
 /* Signature: the fenceline. A row of slats across the top of the card.
    Picket tiling comes from the shared brand.css .slats; this surface is
    wider-pitched (fewer, chunkier pickets) and full-bleed. */
-.slats { height: 14px; margin: 0 -40px 30px; --slat-w: 6px; }
+.slats { height: 14px; margin: 0 0 28px; --slat-w: 6px; }
 
 .tag {
   display: inline-block;
@@ -101,7 +101,7 @@ footer {
 
 @media (max-width: 480px) {
   .card { padding: 0 22px 26px; }
-  .slats { margin: 0 -22px 24px; }
+  .slats { margin: 0 0 24px; }
   h1 { font-size: 21px; }
   .facts div { grid-template-columns: 1fr; gap: 2px; }
 }
