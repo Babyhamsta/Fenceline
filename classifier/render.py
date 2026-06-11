@@ -11,7 +11,10 @@ _EXTRACT_JS = r"""() => {
   const text = document.body ? document.body.innerText : "";
   const title = document.title || "";
   const metaEl = document.querySelector('meta[name="description"]');
+  // Skip og:image/video/audio/url — they are URLs (and a common home for
+  // base64 data: media), not useful text features.
   const og = [...document.querySelectorAll('meta[property^="og:"]')]
+      .filter(m => !/^og:(image|video|audio|url)/i.test(m.getAttribute('property') || ''))
       .map(m => m.getAttribute('content') || '').join(' ');
   const meta = ((metaEl && metaEl.getAttribute('content')) || '') + ' ' + og;
   const scriptHosts = [...new Set([...document.scripts]
@@ -27,13 +30,22 @@ _EXTRACT_JS = r"""() => {
 
 
 def render(url: str, timeout_ms: int = 15000) -> Optional[Dict]:
+    def _route(route):
+        # Abort media sub-resources; let the rest through. Guarded because a
+        # route can already be handled/closed mid-navigation on flaky pages.
+        try:
+            if route.request.resource_type in _BLOCK_TYPES:
+                route.abort()
+            else:
+                route.continue_()
+        except Exception:
+            pass
+
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             ctx = browser.new_context()
-            ctx.route("**/*", lambda route: (
-                route.abort() if route.request.resource_type in _BLOCK_TYPES
-                else route.continue_()))
+            ctx.route("**/*", _route)
             page = ctx.new_page()
             page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
             page.wait_for_timeout(800)  # let SPAs hydrate

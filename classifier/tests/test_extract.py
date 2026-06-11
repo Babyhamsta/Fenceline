@@ -1,4 +1,4 @@
-from classifier.extract import build_record, TEXT_TOKEN_CAP
+from classifier.extract import build_record, doc, TEXT_TOKEN_CAP
 
 
 def test_assembles_and_caps():
@@ -24,3 +24,21 @@ def test_missing_fields_default_safely():
     assert rec["title"] == "" and rec["meta"] == ""
     assert rec["structural"] == {"script_hosts": [], "iframe_count": 0,
                                  "has_age_gate": False}
+
+
+def test_strips_data_uris_from_all_text_fields():
+    # inlined base64 media must never reach the stored record (guardrail)
+    blob = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ"
+    raw = {"text": f"hello {blob} world games arcade fun play online now today",
+           "title": f"Site {blob}", "meta": f"desc {blob} here"}
+    rec = build_record(raw, "https://x.example", "games")
+    assert "data:" not in rec["text"]
+    assert "data:" not in rec["title"]
+    assert "data:" not in rec["meta"]
+    assert "hello" in rec["text"] and "world" in rec["text"]
+
+
+def test_doc_assembles_title_meta_text():
+    rec = {"title": "T", "meta": "M", "text": "B"}
+    assert doc(rec) == "T M B"
+    assert doc({}) == "  "  # missing fields -> empty pieces, never raises

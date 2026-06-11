@@ -146,8 +146,11 @@ async function dumpDomains() {
     let cleanCount = 0;
     for (const d of ranks.keys()) {
       if (cleanCount >= 50000) break;
-      if (!domainCat.has(d)) {
-        lines.push(`${d}\tclean`);
+      // Normalize the Tranco domain the same way blocked domains were, so a
+      // blocked www./IDN/trailing-dot form isn't mislabeled "clean".
+      const nd = normalizeDomain(d);
+      if (nd && !domainCat.has(nd)) {
+        lines.push(`${nd}\tclean`);
         cleanCount++;
       }
     }

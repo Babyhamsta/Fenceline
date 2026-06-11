@@ -7,13 +7,11 @@ from pathlib import Path
 
 import numpy as np
 
+from classifier.extract import doc
 from classifier.metrics import fp_rate_on_clean, per_class
 from classifier.vectorize import DIMS, vectorize
 
 ROOT = Path(__file__).resolve().parent
-
-
-def _doc(rec): return f"{rec.get('title','')} {rec.get('meta','')} {rec.get('text','')}"
 
 
 def main() -> None:
@@ -28,7 +26,7 @@ def main() -> None:
             (ROOT / cfg["paths"]["test"]).read_text("utf-8").splitlines() if l.strip()]
     y_true, y_pred, t0 = [], [], time.perf_counter()
     for rec in test:
-        vec = vectorize(_doc(rec))
+        vec = vectorize(doc(rec))
         logits = intercept.copy()
         for idx, v in vec.items():
             logits += v * coef[:, idx]

@@ -9,19 +9,16 @@ import numpy as np
 from scipy.sparse import csr_matrix
 from sklearn.linear_model import LogisticRegression
 
+from classifier.extract import doc
 from classifier.vectorize import DIMS, vectorize
 
 ROOT = Path(__file__).resolve().parent
 
 
-def _doc(rec: dict) -> str:
-    return f"{rec.get('title','')} {rec.get('meta','')} {rec.get('text','')}"
-
-
 def _matrix(records: List[dict]) -> Tuple[csr_matrix, List[str]]:
     rows, cols, data, labels = [], [], [], []
     for i, rec in enumerate(records):
-        for idx, val in vectorize(_doc(rec)).items():
+        for idx, val in vectorize(doc(rec)).items():
             rows.append(i); cols.append(idx); data.append(val)
         labels.append(rec["label"])
     X = csr_matrix((data, (rows, cols)), shape=(len(records), DIMS))
