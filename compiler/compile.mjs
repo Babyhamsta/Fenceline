@@ -123,7 +123,46 @@ function sha256(buf) {
   return createHash("sha256").update(buf).digest("hex");
 }
 
+// Emit dist/domains.tsv ("<domain>\t<label>") for the content classifier.
+// Reuses the same fetch/normalize path as the build so labels are consistent.
+// "clean" = Tranco-ranked domains that are NOT in any blocked category.
+async function dumpDomains() {
+  const domainCat = new Map();
+  for (let ci = 0; ci < SRC.categories.length; ci++) {
+    const cat = SRC.categories[ci];
+    for (const src of cat.sources) {
+      const { buf } = await fetchSource(src);
+      if (!buf) continue;
+      const found = [];
+      if (src.format === "ut1") parseUt1TarGz(buf, found);
+      else parsePlain(buf.toString("utf8"), found);
+      for (const d of found) if (!domainCat.has(d)) domainCat.set(d, cat.name);
+    }
+  }
+  const lines = [];
+  for (const [d, label] of domainCat) lines.push(`${d}\t${label}`);
+  const ranks = loadTrancoRanks();
+  if (ranks) {
+    let cleanCount = 0;
+    for (const d of ranks.keys()) {
+      if (cleanCount >= 50000) break;
+      if (!domainCat.has(d)) {
+        lines.push(`${d}\tclean`);
+        cleanCount++;
+      }
+    }
+  }
+  mkdirSync(DIST, { recursive: true });
+  writeFileSync(join(DIST, "domains.tsv"), lines.join("\n") + "\n");
+  console.log(`Wrote dist/domains.tsv: ${lines.length.toLocaleString()} rows`);
+}
+
 async function main() {
+  if (process.argv.includes("--dump-domains")) {
+    await dumpDomains();
+    return;
+  }
+
   console.log("Fenceline compiler\n");
 
   // 1) Collect: domain -> category index (first category wins).
