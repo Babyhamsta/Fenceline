@@ -25,7 +25,7 @@ def prepare(raw_path: Path, ratios: Tuple[float, float, float], seed: int
         by_label.setdefault(r["label"], []).append(r)
     deduped: List[Dict] = []
     for rows in by_label.values():
-        deduped.extend(dedup(rows, max_distance=0))
+        deduped.extend(dedup(rows, max_distance=4))
     return split_by_etld1(deduped, ratios, seed)
 
 
