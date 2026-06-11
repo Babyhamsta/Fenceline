@@ -1,5 +1,5 @@
 {
-  "comment": "Category order = precedence (a domain in multiple lists gets the FIRST matching category) AND priority for the DNR fast tier when no Tranco ranking file is available. Dedup across all sources happens in the compiler. All raw.githubusercontent.com URLs verified live 2026-06; UT1 URLs are the long-standing documented endpoints.",
+  "comment": "Category order = precedence (a domain in multiple lists gets the FIRST matching category) AND priority for the DNR fast tier when no Tranco ranking file is available. Dedup across all sources happens in the compiler. All URLs verified live 2026-06-10. Sources are chosen for active maintenance: UT1 (dsi.ut-capitole.fr) and HaGeZi refresh daily; StevenBlack within days; olbat is a daily UT1 mirror. blocklistproject was dropped (its category files had not updated since 2025-12-19).",
   "dnrTier": {
     "comment": "Tier 1: compiled into declarativeNetRequest rules (network-level block, zero flash). Capacity = maxRules * domainsPerRule, also capped by maxDomains. domainsPerRule + the compiler's 1800-byte serialization budget keep every rule under Chrome's per-rule size limit.",
     "maxRules": 28000,
@@ -12,11 +12,14 @@
       "name": "adult",
       "sources": [
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/adult.tar.gz", "format": "ut1" },
-        { "url": "https://raw.githubusercontent.com/blocklistproject/Lists/master/porn.txt", "format": "hosts" },
         { "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/nsfw-onlydomains.txt", "format": "domains" },
         { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/porn/sinfonietta/hosts", "format": "hosts" },
         { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/porn/clefspeare13/hosts", "format": "hosts" },
-        { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/porn/tiuxo/hosts", "format": "hosts" }
+        { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/porn/tiuxo/hosts", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/4skinSkywalker/Anti-Porn-HOSTS-File/master/HOSTS.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/sjhgvr/oisd/main/domainswild2_nsfw.txt", "format": "domains" },
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/mixed_adult.tar.gz", "format": "ut1" },
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/lingerie.tar.gz", "format": "ut1" }
       ]
     },
     {
@@ -24,15 +27,16 @@
       "sources": [
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/gambling.tar.gz", "format": "ut1" },
         { "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/gambling-onlydomains.txt", "format": "domains" },
-        { "url": "https://raw.githubusercontent.com/blocklistproject/Lists/master/gambling.txt", "format": "hosts" },
-        { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/gambling/sinfonietta/hosts", "format": "hosts" }
+        { "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/extensions/gambling/sinfonietta/hosts", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/arkynx/blocklists/main/gambling-domains.txt", "format": "domains" }
       ]
     },
     {
       "name": "drugs",
+      "comment": "olbat is a daily GitHub mirror of UT1's drogue category as plain domains; replaces the stale blocklistproject/drugs.",
       "sources": [
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/drogue.tar.gz", "format": "ut1" },
-        { "url": "https://raw.githubusercontent.com/blocklistproject/Lists/master/drugs.txt", "format": "hosts" }
+        { "url": "https://raw.githubusercontent.com/olbat/ut1-blacklists/master/blacklists/drogue/domains", "format": "domains" }
       ]
     },
     {
@@ -44,29 +48,54 @@
     },
     {
       "name": "malware-phishing",
-      "comment": "Includes fraud/scam domains.",
+      "comment": "Includes fraud/scam domains. HaGeZi TIF (Threat Intelligence Feed, ~1.46M domains, updated daily) replaces the stale blocklistproject phishing/malware/fraud lists.",
       "sources": [
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/phishing.tar.gz", "format": "ut1" },
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/malware.tar.gz", "format": "ut1" },
-        { "url": "https://raw.githubusercontent.com/blocklistproject/Lists/master/phishing.txt", "format": "hosts" },
-        { "url": "https://raw.githubusercontent.com/blocklistproject/Lists/master/malware.txt", "format": "hosts" },
-        { "url": "https://raw.githubusercontent.com/blocklistproject/Lists/master/fraud.txt", "format": "hosts" }
+        { "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/tif-onlydomains.txt", "format": "domains" }
       ]
     },
     {
       "name": "proxy-bypass",
-      "comment": "VPN/proxy/redirector sites students use to evade filtering.",
+      "comment": "VPN/proxy/redirector/DoH sites students use to evade filtering. The HaGeZi doh-vpn-proxy-bypass list (updated daily) covers encrypted-DNS and commercial-VPN endpoints that defeat DNS/network filtering.",
       "sources": [
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/redirector.tar.gz", "format": "ut1" },
-        { "url": "https://dsi.ut-capitole.fr/blacklists/download/strict_redirector.tar.gz", "format": "ut1" }
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/strict_redirector.tar.gz", "format": "ut1" },
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/proxy.tar.gz", "format": "ut1" },
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/vpn.tar.gz", "format": "ut1" },
+        { "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/doh-vpn-proxy-bypass-onlydomains.txt", "format": "domains" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/unifiedVpnLists.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/dibdot/DoH-IP-blocklists/master/doh-domains.txt", "format": "domains" },
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/remote-control.tar.gz", "format": "ut1" }
+      ]
+    },
+    {
+      "name": "social",
+      "comment": "Social media (TikTok, Snapchat, Facebook/Instagram, X, Discord, etc.). Blocks fleet-wide — carve out exceptions in lists/allow.txt or the allowDomains policy per OU. nickoppen lists (updated within ~weeks) add TikTok/Snapchat coverage on top of UT1's social_networks category.",
+      "sources": [
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/social_networks.tar.gz", "format": "ut1" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-tiktok.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-snapchat.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-facebook.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-reddit.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-discord.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-telegram.txt", "format": "hosts" },
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/chat.tar.gz", "format": "ut1" }
       ]
     },
     {
       "name": "games",
-      "comment": "Last in precedence on purpose: a domain that is both adult and games should log as adult. Blanket-blocks roblox.com, coolmathgames.com, poki.com, etc. — carve out exceptions in lists/allow.txt or the allowDomains policy. The olbat URL is a maintained GitHub mirror of the same UT1 data (redundancy if dsi.ut-capitole.fr is down).",
+      "comment": "Last in precedence on purpose: a domain that is both adult and games should log as adult. Blanket-blocks roblox.com, coolmathgames.com, poki.com, crazygames.com, etc. — carve out exceptions in lists/allow.txt or the allowDomains policy. olbat is a maintained daily GitHub mirror of the same UT1 data (redundancy if dsi.ut-capitole.fr is down). NOTE: no public list contains coolmath4kids.com; it is added manually in lists/block.txt.",
       "sources": [
         { "url": "https://dsi.ut-capitole.fr/blacklists/download/games.tar.gz", "format": "ut1" },
-        { "url": "https://raw.githubusercontent.com/olbat/ut1-blacklists/master/blacklists/games/domains", "format": "domains" }
+        { "url": "https://dsi.ut-capitole.fr/blacklists/download/educational_games.tar.gz", "format": "ut1" },
+        { "url": "https://raw.githubusercontent.com/olbat/ut1-blacklists/master/blacklists/games/domains", "format": "domains" },
+        { "url": "https://raw.githubusercontent.com/Mafraysse/AdGuard_GameList-Filter/main/Domain_list_raw.txt", "format": "domains" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-roblox.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-steam.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-epicgames.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-minecraft.txt", "format": "hosts" },
+        { "url": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-nintendo.txt", "format": "hosts" }
       ]
     }
   ]

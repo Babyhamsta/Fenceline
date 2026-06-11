@@ -2,3 +2,16 @@
 # "custom" category. Subdomains are matched automatically.
 # Example:
 # coolmathgames.com
+
+# Kids game portal not present in any upstream blocklist (UT1 games has
+# coolmathgames.com but not this sibling domain).
+coolmath4kids.com
+
+# Cloud-gaming and remote-browser bypass vectors students use to stream
+# games or tunnel past the filter. Not reliably covered by any actively
+# maintained public list, so pinned here.
+now.gg
+play.geforcenow.com
+puffin.com
+kasmweb.com
+neverinstall.com
