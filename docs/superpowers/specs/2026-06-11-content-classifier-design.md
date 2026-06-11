@@ -233,7 +233,10 @@ exactly like the blocklists:
 
 ## Open-sourcing — model yes, raw dataset NO (legal sharp edge)
 
-Requirement: open-source the model and dataset. One real constraint:
+Confirmed scope: open-source the **scraper, training/eval scripts, and the model
+weights** — but **not the scraped dataset itself**. Others reproduce the dataset
+by running the public scraper against the public blocklist domains. One real
+constraint drives this:
 
 - **The trained model weights** can be released (project artifact; standard
   practice, doesn't redistribute third-party content). License alongside the
