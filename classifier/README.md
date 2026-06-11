@@ -11,20 +11,19 @@ design.
 
 We publish the **scraper, training/eval scripts, and the model weights**. We do
 **not** publish the scraped dataset itself (it is third-party site content).
-Reproduce it by running the scraper against the public blocklist domains:
-
-    node ../compiler/compile.mjs --dump-domains   # writes dist/domains.tsv
-    python -m playwright install chromium
-    python scrape.py && python build_dataset.py && python train.py
+Reproduce it by running the scraper against the public blocklist domains.
 
 ## Reproduce (POC)
 
-    source .venv/Scripts/activate
-    pip install -r requirements.txt
-    pytest                       # unit tests
-    python scrape.py             # render the sampled domains
-    python build_dataset.py      # filter, dedup, split
-    python train.py              # fit the model
-    python export_model.py       # emit dist/model.bin + model-meta.json
-    python evaluate.py           # the go/no-go table
-    node infer.mjs --selftest    # JS inference parity
+Run everything from the **repo root** with the venv interpreter (the Python
+scripts are package modules — run them with `-m`, not as bare files):
+
+    node compiler/compile.mjs --dump-domains          # writes dist/domains.tsv
+    .venv/Scripts/python.exe -m playwright install chromium
+    .venv/Scripts/python.exe -m pytest classifier/tests        # unit tests
+    .venv/Scripts/python.exe -m classifier.scrape             # render sampled domains
+    .venv/Scripts/python.exe -m classifier.build_dataset      # filter, dedup, split
+    .venv/Scripts/python.exe -m classifier.train              # fit the model
+    .venv/Scripts/python.exe -m classifier.export_model       # emit dist/model.bin + model-meta.json
+    .venv/Scripts/python.exe -m classifier.evaluate           # the go/no-go table
+    node classifier/infer.mjs --selftest                      # JS inference parity

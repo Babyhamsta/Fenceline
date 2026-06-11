@@ -16,6 +16,16 @@ def main() -> None:
     cfg = json.loads((ROOT / "poc.json").read_text(encoding="utf-8"))
     data = np.load(ROOT / cfg["paths"]["model"], allow_pickle=True)
     coef = data["coef"].astype(np.float32)
+    intercept = data["intercept"].astype(np.float32)
+    classes = [str(c) for c in data["classes"]]
+    # sklearn emits ONE coef row for a 2-class fit (predicts classes_[1]). The
+    # shipped artifact and the JS scorer always assume n_classes rows + softmax,
+    # so expand the binary case to the equivalent 2-row form: class 0 = zeros,
+    # class 1 = the learned row (softmax of [0, w·x+b] == sigmoid(w·x+b)).
+    if coef.shape[0] == 1 and len(classes) == 2:
+        coef = np.vstack([np.zeros_like(coef[0]), coef[0]])
+        intercept = np.array([0.0, float(intercept[0])], dtype=np.float32)
+    assert coef.shape[0] == len(classes), "coef rows must equal class count"
     dist = ROOT / cfg["paths"]["dist"]
     dist.mkdir(parents=True, exist_ok=True)
     blob = coef.tobytes()
@@ -25,8 +35,8 @@ def main() -> None:
         "version": version,
         "vectorizer": "fnv-hash-v1",
         "dims": DIMS,
-        "classes": [str(c) for c in data["classes"]],
-        "intercept": [float(x) for x in data["intercept"]],
+        "classes": classes,
+        "intercept": [float(x) for x in intercept],
     }
     (dist / "model-meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     print(f"exported model.bin ({len(blob)} bytes), version {version}")
