@@ -1,0 +1,16 @@
+{
+  "categories": ["games", "gambling", "proxy-bypass"],
+  "clean_label": "clean",
+  "per_class_target": 5000,
+  "scrape_multiplier": 3,
+  "dims": 65536,
+  "paths": {
+    "domains_tsv": "../dist/domains.tsv",
+    "raw": "data/raw.jsonl",
+    "train": "data/train.jsonl",
+    "val": "data/val.jsonl",
+    "test": "data/test.jsonl",
+    "model": "data/model.npz",
+    "dist": "dist"
+  }
+}
