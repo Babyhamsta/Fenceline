@@ -1,6 +1,6 @@
 {
-  "version": "6a13f6b0ea689616",
-  "generated": "2026-06-11T16:48:12.644Z",
+  "version": "ff62e5efcb90b9cf",
+  "generated": "2026-06-11T18:03:51.054Z",
   "categories": [
     "adult",
     "gambling",
@@ -13,7 +13,7 @@
     "custom"
   ],
   "counts": {
-    "total": 6759945,
+    "total": 6759985,
     "dnrTier": 500000,
     "rules": 9145
   },
@@ -173,11 +173,11 @@
   ],
   "tail": {
     "file": "tail.bin",
-    "sha256": "afe46fd1b8ee7a5884ea29adefacb2c2be0cc0f60fca664f07ffe3c3af12daac",
-    "count": 6759945
+    "sha256": "2551390e04cd9255e1c49653afccfc82279616e78428fa0d5a4ef1ec0b4d498f",
+    "count": 6759985
   },
   "cats": {
     "file": "cats.bin",
-    "sha256": "2e1eb86037c8e5cc517a3e72915fcf6368f548ee138d6bc66bdf3cf34a5fde5c"
+    "sha256": "fa3e567364ee0fad87c9d03a1274115ce5367374c08a9d656f8fb8260512fb98"
   }
 }
