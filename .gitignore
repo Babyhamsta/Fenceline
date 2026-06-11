@@ -1,0 +1,13 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Build / generated artifacts
+dist/
+
+# Scraped corpus — NOT redistributed (see classifier design spec)
+classifier/data/
+
+# Test scratch
+test/.tmp/
