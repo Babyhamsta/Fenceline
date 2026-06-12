@@ -4,7 +4,7 @@ A tiny on-device classifier that inspects a page's rendered text after it loads
 and blocks it if it confidently matches a filtered category the blocklists
 missed. Defense in depth — the lists stay primary, this is the async backstop.
 
-See `docs/superpowers/specs/2026-06-11-content-classifier-design.md` for the full
+See `docs/design/specs/2026-06-11-content-classifier-design.md` for the full
 design.
 
 ## Open-source scope

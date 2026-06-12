@@ -1,7 +1,5 @@
 # Content Classifier — POC Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Build a runnable proof-of-concept that scrapes rendered page text for `games` + `gambling` + `proxy-bypass` + `clean`, trains a tiny FNV-hashed-n-gram linear classifier, and prints a precision / false-positive / size / latency table so we can make a go/no-go call before the full crawl.
 
 **Architecture:** Offline Python pipeline (Playwright render → filter → dedup → eTLD+1 split → train sklearn LogisticRegression on a *self-defined* FNV-1a hashing vectorizer) plus a plain-JS inference path that reads the exported weights and reproduces the Python scores exactly. The self-defined hashing (vs sklearn's `HashingVectorizer`) is what makes Python↔JS parity exact and reuses the repo's existing FNV-1a idiom. The labeled domain universe comes from the existing compiler via a new `--dump-domains` flag (single source of truth for labels).
@@ -103,7 +101,7 @@ A tiny on-device classifier that inspects a page's rendered text after it loads
 and blocks it if it confidently matches a filtered category the blocklists
 missed. Defense in depth — the lists stay primary, this is the async backstop.
 
-See `docs/superpowers/specs/2026-06-11-content-classifier-design.md` for the full
+See `docs/design/specs/2026-06-11-content-classifier-design.md` for the full
 design.
 
 ## Open-source scope
