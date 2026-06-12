@@ -11,9 +11,26 @@
 // adversarial page can't spin the model and pin the CPU.
 
 (() => {
-  if (window.top !== window) return; // top frame only
   const proto = location.protocol;
   if (proto !== "http:" && proto !== "https:" && proto !== "about:") return;
+
+  // Sub-frames: scan ONLY frames that are (a) same-origin to their parent and
+  // (b) large. A web proxy serves the forbidden site SAME-ORIGIN under its own
+  // host, so the proxied content is reachable here — while every cross-origin
+  // third-party embed (ads, trackers, widgets) is structurally skipped, which
+  // is what keeps this from false-blocking a legit page over an embedded ad and
+  // from spinning up on dozens of tiny ad iframes. Behaviour, not name lists.
+  if (window.top !== window) {
+    let sameOrigin = false;
+    try {
+      void window.parent.location.href;
+      sameOrigin = true;
+    } catch (e) {
+      sameOrigin = false;
+    }
+    if (!sameOrigin) return;
+    if (window.innerWidth < 500 || window.innerHeight < 380) return;
+  }
 
   const TEXT_TOKEN_CAP = 400; // mirrors classifier/extract.py
   const DATA_URI = /data:[^\s'"<>]+/gi;

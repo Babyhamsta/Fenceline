@@ -146,6 +146,7 @@ function looksLikeProxyUrl(url) {
   }
 }
 
+
 function isAllowed(hostname, cfg) {
   const h = hostname.toLowerCase();
   return cfg.allowDomains.some((d) => h === d || h.endsWith("." + d));
@@ -163,14 +164,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   // the host serving it is a web proxy — block & pin it on first use.
   if (looksLikeProxyUrl(details.url)) {
     const phost = hostnameOf(details.url) || lastRealHost.get(details.tabId);
-    if (phost) {
-      const cfg = await getConfig();
-      if (!isAllowed(phost, cfg)) {
-        await pinDomain(phost, "proxy-bypass", 1);
-        blockTab(details.tabId, phost, "proxy-bypass", "proxy");
-        return;
-      }
-    }
+    if (phost && (await blockProxyHost(phost, details.tabId))) return;
   }
 
   if (details.frameId !== 0) return;
@@ -222,6 +216,37 @@ chrome.webNavigation.onErrorOccurred.addListener(async (details) => {
   const hit = check(hostname);
   if (hit) blockTab(details.tabId, hit.domain, hit.category, "list");
 });
+
+// ---- Tier 4b: web-proxy WIRE PROTOCOL ----------------------------------
+// The Bare protocol (used by Ultraviolet and most modern proxies) tunnels the
+// real target in x-bare-* request headers. This is the transport contract — it
+// survives renaming the client JS, obfuscating the code, and XOR-encoding the
+// visible path, because the bare server still has to be told what to fetch.
+// No legitimate site sends x-bare-* headers, so this is robust AND low-FP.
+async function blockProxyHost(host, tabId) {
+  const cfg = await getConfig();
+  if (isAllowed(host, cfg)) return false;
+  await pinDomain(host, "proxy-bypass", 1);
+  if (tabId >= 0) {
+    blockTab(tabId, host, "proxy-bypass", "proxy");
+  } else {
+    // Request came from the proxy's service worker (no tab) — redirect whatever
+    // tab is sitting on that host.
+    for (const [tid, h] of lastRealHost) if (h === host) blockTab(tid, host, "proxy-bypass", "proxy");
+  }
+  return true;
+}
+
+chrome.webRequest.onBeforeSendHeaders.addListener(
+  (details) => {
+    const headers = details.requestHeaders || [];
+    if (!headers.some((h) => h.name.toLowerCase().startsWith("x-bare-"))) return;
+    const host = (details.initiator && hostnameOf(details.initiator)) || hostnameOf(details.url);
+    if (host) blockProxyHost(host, details.tabId);
+  },
+  { urls: ["*://*/*"], types: ["xmlhttprequest", "websocket", "other"] },
+  ["requestHeaders"]
+);
 
 // ---- sync scheduling ---------------------------------------------------
 
@@ -325,10 +350,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       // Tier 3: a content script sent this page's rendered text. Score it and
       // block if a blocked category clears the confidence threshold.
       const cfg = await getConfig();
-      // about:blank (in-page proxy) has no hostname — attribute to the real
-      // host the tab came from.
-      let hostname = hostnameOf(msg.url);
-      if (!hostname && sender.tab) hostname = lastRealHost.get(sender.tab.id) || null;
+      // A sub-frame's own URL is untrustworthy (a proxy spoofs it / about:blank
+      // has none), so a sub-frame hit is attributed to the real host the tab
+      // came from — i.e. the proxy serving it. Top-frame hits use the page URL.
+      const isSub = sender.frameId !== 0;
+      const tabId = sender.tab && sender.tab.id;
+      let hostname = isSub ? null : hostnameOf(msg.url);
+      if (!hostname && tabId != null) hostname = lastRealHost.get(tabId) || hostnameOf(msg.url);
       if (!cfg.contentModelEnabled || !hostname || isAllowed(hostname, cfg)) {
         sendResponse({ blocked: false });
         return;
@@ -341,8 +369,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const doc = `${msg.title || ""} ${msg.meta || ""} ${msg.text || ""}`;
       const verdict = decide(doc, cfg.contentModelThreshold);
       if (verdict && sender.tab) {
-        await pinDomain(hostname, verdict.category, verdict.confidence);
-        blockTab(sender.tab.id, hostname, verdict.category, "model", verdict.confidence);
+        // Pin only top-frame hits (the site's own content). A sub-frame hit
+        // blocks this visit but isn't pinned — a proxy just re-flags next time,
+        // while a legit page with one large same-origin section isn't broken
+        // forever.
+        if (!isSub) await pinDomain(hostname, verdict.category, verdict.confidence);
+        blockTab(tabId, hostname, verdict.category, "model", verdict.confidence);
         sendResponse({ blocked: true });
       } else {
         sendResponse({ blocked: false });
