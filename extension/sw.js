@@ -27,6 +27,16 @@ const SYNC_ALARM = "fenceline-sync";
 // with a tail hit; don't double-log the same tab+domain within 3 s.
 const recentBlocks = new Map(); // tabId -> { domain, t }
 
+// The last real http/https host each tab navigated to. In-page "browser"
+// proxies render proxied content into an about:blank top document (no
+// hostname), so a content block from there is attributed to the host that
+// served the proxy (e.g. cherrion.top) — which is then pinned.
+const lastRealHost = new Map(); // tabId -> hostname
+chrome.tabs.onRemoved.addListener((tabId) => {
+  lastRealHost.delete(tabId);
+  recentBlocks.delete(tabId);
+});
+
 function shouldLog(tabId, domain) {
   const prev = recentBlocks.get(tabId);
   const now = Date.now();
@@ -123,6 +133,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   if (details.frameId !== 0) return;
   const hostname = hostnameOf(details.url);
   if (!hostname) return;
+  lastRealHost.set(details.tabId, hostname); // remember for about:blank attribution
 
   const cfg = await getConfig();
   if (isAllowed(hostname, cfg)) return;
@@ -271,7 +282,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       // Tier 3: a content script sent this page's rendered text. Score it and
       // block if a blocked category clears the confidence threshold.
       const cfg = await getConfig();
-      const hostname = hostnameOf(msg.url);
+      // about:blank (in-page proxy) has no hostname — attribute to the real
+      // host the tab came from.
+      let hostname = hostnameOf(msg.url);
+      if (!hostname && sender.tab) hostname = lastRealHost.get(sender.tab.id) || null;
       if (!cfg.contentModelEnabled || !hostname || isAllowed(hostname, cfg)) {
         sendResponse({ blocked: false });
         return;
