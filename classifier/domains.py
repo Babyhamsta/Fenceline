@@ -19,7 +19,10 @@ def sample_domains(
             buckets[label].append(domain)
     rng = random.Random(seed)
     out: List[Tuple[str, str]] = []
-    for label, domains in buckets.items():
+    # Sorted label order so the sampled sequence is reproducible across
+    # processes (set iteration order varies with hash randomization).
+    for label in sorted(buckets):
+        domains = buckets[label]
         rng.shuffle(domains)
         out.extend((d, label) for d in domains[:per_class])
     return out
