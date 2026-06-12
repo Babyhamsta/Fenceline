@@ -2,11 +2,24 @@
 // Run from the REPO ROOT: node classifier/tests/test_parity.mjs
 import { classify } from "../infer.mjs";
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const PY = join(REPO_ROOT, ".venv", "Scripts", "python.exe");
+
+// Resolve the Python interpreter cross-platform so this runs locally (Windows or
+// POSIX venv) and in CI (no venv — deps installed into the runner's python).
+// FENCELINE_PYTHON overrides everything.
+function resolvePython() {
+  if (process.env.FENCELINE_PYTHON) return process.env.FENCELINE_PYTHON;
+  const winVenv = join(REPO_ROOT, ".venv", "Scripts", "python.exe");
+  const nixVenv = join(REPO_ROOT, ".venv", "bin", "python");
+  if (existsSync(winVenv)) return winVenv;
+  if (existsSync(nixVenv)) return nixVenv;
+  return process.platform === "win32" ? "python" : "python3";
+}
+const PY = resolvePython();
 const text = "play free online games arcade racing puzzle multiplayer";
 const js = classify(text);
 const py = JSON.parse(
