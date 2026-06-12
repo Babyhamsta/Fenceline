@@ -69,15 +69,13 @@ blocked automatically in both tiers.
 
 ### The list pipeline
 
-```
-GitHub Action (every 2 days)                  Managed Chrome
-┌─────────────────────────┐   GitHub Pages   ┌──────────────────────────────┐
-│ compiler/compile.mjs    │   (static, CDN)  │ MV3 extension (force-install)│
-│  pull UT1 / HaGeZi /…    ├──► meta.json ────► version check (12h, ~1 KB)   │
-│  categorize + dedupe    │    dnr/NNN.json ─► Tier 1: network rules         │
-│  apply allow/block.txt  │    tail.bin ─────► Tier 2: sorted u64 hashes     │
-│  emit artifacts + model  │    model.bin ────► Tier 3: content model         │
-└─────────────────────────┘                  └──────────────────────────────┘
+```mermaid
+flowchart LR
+    A["<b>GitHub Action</b> — every 2 days<br/><br/>compiler/compile.mjs<br/>pull UT1 · HaGeZi · …<br/>categorize · dedupe<br/>apply allow / block<br/>emit lists + model"]
+    P["<b>GitHub Pages</b> — static, CDN<br/><br/>meta.json<br/>dnr/*.json<br/>tail.bin<br/>model.bin"]
+    E["<b>Managed Chrome</b> — MV3, force-installed<br/><br/>Tier 1 · network rules<br/>Tier 2 · tail engine<br/>Tier 3 · content model"]
+    A -->|publish| P
+    P -->|"device sync<br/>12 h version check · full pull ≤ 7 days"| E
 ```
 
 ## The content model (Tier 3)
