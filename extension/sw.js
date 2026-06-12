@@ -279,6 +279,35 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
   ["requestHeaders"]
 );
 
+// ---- Tier 4c: app smuggled as an SVG document --------------------------
+// A top-level navigation whose RESPONSE is image/svg+xml is not normal
+// browsing — it's the "serve a whole app inside <svg><foreignObject>" trick
+// (DaydreamX et al.) used to host a web proxy under an innocent .svg extension
+// on a public code CDN (jsDelivr / githack / statically). We judge it on the
+// HTTP Content-Type, which the page author cannot obfuscate without abandoning
+// the technique — so this fires BEFORE the page's scripts run and is immune to
+// its shuffled script names, glyph-obfuscated fonts, anti-debugger traps, and
+// console hijacking (none of which have executed at header time).
+//
+// We block but do NOT pin: the host is shared CDN infrastructure (pinning
+// cdn.jsdelivr.net would over-block a legit CDN), and this header check is
+// stateless — it re-fires on every visit, so no pin is needed. A district can
+// still allowlist a host that legitimately serves top-level SVGs.
+chrome.webRequest.onHeadersReceived.addListener(
+  (details) => {
+    if (details.type !== "main_frame" || details.tabId < 0) return;
+    const ct = (details.responseHeaders || []).find((h) => h.name.toLowerCase() === "content-type");
+    if (!ct || !/image\/svg\+xml/i.test(ct.value || "")) return;
+    const host = hostnameOf(details.url);
+    if (!host) return;
+    getConfig().then((cfg) => {
+      if (!isAllowed(host, cfg)) blockTab(details.tabId, host, "proxy-bypass", "proxy", null, true);
+    });
+  },
+  { urls: ["*://*/*"], types: ["main_frame"] },
+  ["responseHeaders"]
+);
+
 // ---- sync scheduling ---------------------------------------------------
 
 async function scheduleSync() {
