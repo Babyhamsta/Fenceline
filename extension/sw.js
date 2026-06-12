@@ -32,9 +32,50 @@ const recentBlocks = new Map(); // tabId -> { domain, t }
 // hostname), so a content block from there is attributed to the host that
 // served the proxy (e.g. cherrion.top) — which is then pinned.
 const lastRealHost = new Map(); // tabId -> hostname
+
+// MV3 suspends idle service workers (~30 s) and SW globals are then lost. If a
+// scanPage hit from an about:blank in-page proxy arrives after a restart with
+// an empty lastRealHost, hostnameOf("about:blank") is null and the block is
+// silently skipped — leaving the in-page-proxy case (which the README
+// advertises as covered) intermittently uncovered. Mirror the Map into
+// chrome.storage.session: it survives SW restarts, dies with the browser
+// session, and never hits disk — consistent with the privacy posture. The Map
+// stays a write-through cache; hydrate lazily before any read, persist debounced
+// on every update. (recentBlocks is fine to lose — at worst one duplicate log.)
+let _lrhHydrated = null;
+function hydrateLastRealHost() {
+  if (!_lrhHydrated) {
+    _lrhHydrated = chrome.storage.session
+      .get("lastRealHost")
+      .then(({ lastRealHost: stored }) => {
+        if (stored) {
+          for (const [k, v] of Object.entries(stored)) {
+            const tid = Number(k);
+            if (!lastRealHost.has(tid)) lastRealHost.set(tid, v); // live updates win
+          }
+        }
+      })
+      .catch(() => {});
+  }
+  return _lrhHydrated;
+}
+let _lrhTimer = null;
+function persistLastRealHost() {
+  if (_lrhTimer) return; // debounce: coalesce bursts of nav events into one write
+  _lrhTimer = setTimeout(() => {
+    _lrhTimer = null;
+    chrome.storage.session.set({ lastRealHost: Object.fromEntries(lastRealHost) }).catch(() => {});
+  }, 500);
+}
+function setLastRealHost(tabId, hostname) {
+  lastRealHost.set(tabId, hostname);
+  persistLastRealHost();
+}
+
 chrome.tabs.onRemoved.addListener((tabId) => {
   lastRealHost.delete(tabId);
   recentBlocks.delete(tabId);
+  persistLastRealHost();
 });
 
 function shouldLog(tabId, domain) {
@@ -320,6 +361,7 @@ function extraBlocked(hostname, cfg) {
 // ---- Tier 2: tail check on navigation ---------------------------------
 
 chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
+  await hydrateLastRealHost(); // SW may have just restarted; restore attribution map
   // Tier 4 runs on EVERY frame: a proxy-engine URL anywhere in the tab means
   // the host serving it is a web proxy — block & pin it on first use.
   if (looksLikeProxyUrl(details.url)) {
@@ -330,7 +372,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   if (details.frameId !== 0) return;
   const hostname = hostnameOf(details.url);
   if (!hostname) return;
-  lastRealHost.set(details.tabId, hostname); // remember for about:blank attribution
+  setLastRealHost(details.tabId, hostname); // remember for about:blank attribution
 
   const cfg = await getConfig();
   if (isAllowed(hostname, cfg)) return;
@@ -384,6 +426,7 @@ chrome.webNavigation.onErrorOccurred.addListener(async (details) => {
 // visible path, because the bare server still has to be told what to fetch.
 // No legitimate site sends x-bare-* headers, so this is robust AND low-FP.
 async function blockProxyHost(host, tabId, pin = true) {
+  await hydrateLastRealHost(); // tabless path below scans the attribution map
   const cfg = await getConfig();
   if (isAllowed(host, cfg)) return false;
   // URL-path hits pass pin=false: that signal is stateless (re-fires on every
@@ -599,7 +642,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const isSub = sender.frameId !== 0;
       const tabId = sender.tab && sender.tab.id;
       let hostname = isSub ? null : hostnameOf(msg.url);
-      if (!hostname && tabId != null) hostname = lastRealHost.get(tabId) || hostnameOf(msg.url);
+      if (!hostname && tabId != null) {
+        await hydrateLastRealHost(); // about:blank proxy attribution after a SW restart
+        hostname = lastRealHost.get(tabId) || hostnameOf(msg.url);
+      }
       if (!hostname || isAllowed(hostname, cfg)) {
         sendResponse({ blocked: false });
         return;
