@@ -153,9 +153,12 @@ async function pinDomain(domain, category, confidence) {
   const p = await loadPins();
   if (p.has(domain)) return;
   p.set(domain, { category, confidence });
+  // Evict from the Map itself (FIFO, insertion order) BEFORE serializing.
+  // Trimming only the serialized object left the in-memory Map untrimmed, so
+  // the next write re-serialized the full Map and resurrected every evicted
+  // entry — the cap held for one write, then storage grew unbounded.
+  while (p.size > PIN_CAP) p.delete(p.keys().next().value);
   const obj = Object.fromEntries(p);
-  const keys = Object.keys(obj);
-  while (keys.length > PIN_CAP) delete obj[keys.shift()];
   await chrome.storage.local.set({ modelPinned: obj });
 }
 
