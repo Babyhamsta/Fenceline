@@ -10,7 +10,7 @@
 5. **Actions** tab → run **Build filter lists** manually once. It compiles and pushes
    artifacts to `gh-pages/lists/`. After Pages deploys, verify:
    `https://YOUR-ORG.github.io/fenceline/lists/meta.json`
-6. The workflow then runs daily. It only publishes when list content actually changed
+6. The workflow then runs every 2 days. It only publishes when list content actually changed
    (version is a content hash), and devices only download the full artifacts when the
    version changes **and** their `minDaysBetweenFullSync` throttle allows it.
 

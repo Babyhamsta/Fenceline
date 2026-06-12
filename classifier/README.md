@@ -15,15 +15,19 @@ Reproduce it by running the scraper against the public blocklist domains.
 
 ## Reproduce (POC)
 
-Run everything from the **repo root** with the venv interpreter (the Python
-scripts are package modules — run them with `-m`, not as bare files):
+Run everything from the **repo root** in an activated venv (the Python scripts
+are package modules — run them with `-m`, not as bare files):
 
-    node compiler/compile.mjs --dump-domains          # writes dist/domains.tsv
-    .venv/Scripts/python.exe -m playwright install chromium
-    .venv/Scripts/python.exe -m pytest classifier/tests        # unit tests
-    .venv/Scripts/python.exe -m classifier.scrape             # render sampled domains
-    .venv/Scripts/python.exe -m classifier.build_dataset      # filter, dedup, split
-    .venv/Scripts/python.exe -m classifier.train              # fit the model
-    .venv/Scripts/python.exe -m classifier.export_model       # emit dist/model.bin + model-meta.json
-    .venv/Scripts/python.exe -m classifier.evaluate           # the go/no-go table
-    node classifier/infer.mjs --selftest                      # JS inference parity
+    # Activate the venv first:
+    #   Windows (Git Bash):  source .venv/Scripts/activate
+    #   macOS / Linux:       source .venv/bin/activate
+
+    node compiler/compile.mjs --dump-domains   # writes dist/domains.tsv
+    python -m playwright install chromium
+    python -m pytest classifier/tests          # unit tests
+    python -m classifier.scrape                # render sampled domains
+    python -m classifier.build_dataset         # filter, dedup, split
+    python -m classifier.train                 # fit the model
+    python -m classifier.export_model          # emit dist/model.bin + model-meta.json
+    python -m classifier.evaluate              # the go/no-go table
+    node classifier/infer.mjs --selftest       # JS inference parity
