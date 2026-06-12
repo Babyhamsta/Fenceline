@@ -14,13 +14,14 @@
   const proto = location.protocol;
   if (proto !== "http:" && proto !== "https:" && proto !== "about:") return;
 
-  // Sub-frames: scan ONLY frames that are (a) same-origin to their parent and
-  // (b) large. A web proxy serves the forbidden site SAME-ORIGIN under its own
-  // host, so the proxied content is reachable here — while every cross-origin
-  // third-party embed (ads, trackers, widgets) is structurally skipped, which
-  // is what keeps this from false-blocking a legit page over an embedded ad and
-  // from spinning up on dozens of tiny ad iframes. Behaviour, not name lists.
-  if (window.top !== window) {
+  // Sub-frames: only scan ones SAME-ORIGIN to their parent. A web proxy serves
+  // the forbidden site same-origin under its own host, so the proxied content is
+  // reachable here — while every cross-origin third-party embed (ads, trackers,
+  // widgets) is structurally skipped. Behaviour, not name lists. The SIZE gate
+  // (proxied content fills the view; widgets don't) is applied at scan time, not
+  // here, because these in-page browsers show/grow the content frame after load.
+  const isSubframe = window.top !== window;
+  if (isSubframe) {
     let sameOrigin = false;
     try {
       void window.parent.location.href;
@@ -29,7 +30,6 @@
       sameOrigin = false;
     }
     if (!sameOrigin) return;
-    if (window.innerWidth < 500 || window.innerHeight < 380) return;
   }
 
   const TEXT_TOKEN_CAP = 400; // mirrors classifier/extract.py
@@ -63,6 +63,9 @@
 
   async function doScan() {
     if (scans >= MAX_SCANS) return stop();
+    // Size gate (sub-frames only) evaluated NOW, so a content frame that was
+    // hidden/unsized at load but is large now still gets scanned.
+    if (isSubframe && (window.innerWidth < 500 || window.innerHeight < 380)) return;
     const rec = extract();
     if (rec.text.split(" ").length < 20) return; // thin/blank — no signal
     if (rec.text === lastText) return; // content unchanged since last scan
