@@ -17,6 +17,7 @@ import { check, ensureLoaded, isReady, listSize } from "./lib/tail.js";
 import { checkAndSync, applyPolicyRules } from "./lib/sync.js";
 import { recordBlock, resetCache } from "./lib/log.js";
 import { getConfig } from "./lib/config.js";
+import { ensureModelLoaded, isModelReady, modelVersion, decide } from "./lib/model.js";
 
 const SYNC_ALARM = "fenceline-sync";
 
@@ -36,16 +37,51 @@ function shouldLog(tabId, domain) {
   return !(prev && prev.domain === domain && now - prev.t < 3000);
 }
 
-async function blockTab(tabId, domain, category) {
-  if (shouldLog(tabId, domain)) recordBlock(domain, category);
-  const url =
+// source: "list" (DNR/tail), "model" (content classifier), "district-policy".
+// confidence (0..1) is set only for model blocks — surfaced on the block page.
+async function blockTab(tabId, domain, category, source = "list", confidence = null) {
+  if (shouldLog(tabId, domain)) recordBlock(domain, category, source);
+  let url =
     chrome.runtime.getURL("block/block.html") +
-    `?d=${encodeURIComponent(domain)}&c=${encodeURIComponent(category)}`;
+    `?d=${encodeURIComponent(domain)}&c=${encodeURIComponent(category)}` +
+    `&s=${encodeURIComponent(source)}`;
+  if (confidence != null) url += `&conf=${Math.round(confidence * 100)}`;
   try {
     await chrome.tabs.update(tabId, { url });
   } catch (e) {
     // Tab may already be gone.
   }
+}
+
+// Domains the model has blocked before are pinned locally so a re-visit is
+// blocked at navigation time (no second-load flash, no re-scan).
+let pinned = null; // Map<registrableDomain, {category, confidence}>
+const PIN_CAP = 2000;
+
+async function loadPins() {
+  if (pinned) return pinned;
+  const { modelPinned = {} } = await chrome.storage.local.get(["modelPinned"]);
+  pinned = new Map(Object.entries(modelPinned));
+  return pinned;
+}
+
+async function pinDomain(domain, category, confidence) {
+  const p = await loadPins();
+  if (p.has(domain)) return;
+  p.set(domain, { category, confidence });
+  const obj = Object.fromEntries(p);
+  const keys = Object.keys(obj);
+  while (keys.length > PIN_CAP) delete obj[keys.shift()];
+  await chrome.storage.local.set({ modelPinned: obj });
+}
+
+function pinnedHit(hostname, p) {
+  const parts = hostname.toLowerCase().split(".");
+  for (let i = 0; i < parts.length - 1; i++) {
+    const cand = parts.slice(i).join(".");
+    if (p.has(cand)) return cand;
+  }
+  return null;
 }
 
 function hostnameOf(url) {
@@ -84,9 +120,18 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
     return;
   }
 
+  // Re-visit to a domain the model blocked earlier — block before it loads.
+  const pins = await loadPins();
+  const ph = pinnedHit(hostname, pins);
+  if (ph) {
+    const info = pins.get(ph);
+    blockTab(details.tabId, ph, info.category, "model", info.confidence);
+    return;
+  }
+
   await ensureLoaded();
   const hit = check(hostname);
-  if (hit) blockTab(details.tabId, hit.domain, hit.category);
+  if (hit) blockTab(details.tabId, hit.domain, hit.category, "list");
 });
 
 // ---- Tier 1: DNR blocked the request at the network layer -------------
@@ -108,7 +153,7 @@ chrome.webNavigation.onErrorOccurred.addListener(async (details) => {
   // resolve the category from the tail (superset of the DNR tier).
   await ensureLoaded();
   const hit = check(hostname);
-  if (hit) blockTab(details.tabId, hit.domain, hit.category);
+  if (hit) blockTab(details.tabId, hit.domain, hit.category, "list");
 });
 
 // ---- sync scheduling ---------------------------------------------------
@@ -136,6 +181,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     // First install: force a full download regardless of throttle.
     const loaded = await ensureLoaded();
     await checkAndSync(!loaded);
+    await ensureModelLoaded();
   } catch (e) {
     console.error("[fenceline] initial sync failed", e);
   }
@@ -144,6 +190,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 chrome.runtime.onStartup.addListener(async () => {
   await scheduleSync();
   ensureLoaded();
+  ensureModelLoaded();
 });
 
 // Admin pushed new policy (allow/deny lists, settings) — apply live.
@@ -170,9 +217,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         "lastCheck"
       ]);
       await ensureLoaded();
+      await ensureModelLoaded();
       sendResponse({
         ready: isReady(),
         tailSize: listSize(),
+        modelReady: isModelReady(),
+        modelVersion: modelVersion(),
+        modelEnabled: cfg.contentModelEnabled,
         config: {
           schoolName: cfg.schoolName,
           supportContact: cfg.supportContact,
@@ -202,6 +253,29 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         } catch (e) {
           sendResponse({ synced: false, error: String(e) });
         }
+      }
+    } else if (msg.type === "scanPage") {
+      // Tier 3: a content script sent this page's rendered text. Score it and
+      // block if a blocked category clears the confidence threshold.
+      const cfg = await getConfig();
+      const hostname = hostnameOf(msg.url);
+      if (!cfg.contentModelEnabled || !hostname || isAllowed(hostname, cfg)) {
+        sendResponse({ blocked: false });
+        return;
+      }
+      await ensureModelLoaded();
+      if (!isModelReady()) {
+        sendResponse({ blocked: false });
+        return;
+      }
+      const doc = `${msg.title || ""} ${msg.meta || ""} ${msg.text || ""}`;
+      const verdict = decide(doc, cfg.contentModelThreshold);
+      if (verdict && sender.tab) {
+        await pinDomain(hostname, verdict.category, verdict.confidence);
+        blockTab(sender.tab.id, hostname, verdict.category, "model", verdict.confidence);
+        sendResponse({ blocked: true });
+      } else {
+        sendResponse({ blocked: false });
       }
     } else if (msg.type === "clearLogs") {
       const cfg = await getConfig();

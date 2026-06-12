@@ -16,6 +16,7 @@
 
 import { getConfig } from "./config.js";
 import { storeArtifacts, getStoredVersion } from "./tail.js";
+import { storeModel, getStoredModelVersion } from "./model.js";
 
 const ALLOW_ID_BASE = 900001;
 const EXTRA_BLOCK_ID_BASE = 950001;
@@ -115,6 +116,23 @@ async function applyDnrChunks(cfg, meta, storedChunkHashes) {
   await chrome.storage.local.set({ chunkState: state });
 }
 
+// Pull the content-classifier model when its version changes. Independent of
+// the list-version check and the bandwidth throttle below: the model is small
+// (~1.3 MB) and we want it current even when the (much larger) list isn't due.
+async function syncModel(cfg, meta) {
+  if (!meta.model || !meta.model.version) return null;
+  if ((await getStoredModelVersion()) === meta.model.version) return null;
+  const [coefBuf, modelMeta] = await Promise.all([
+    fetchBuf(`${cfg.listBaseUrl}/${meta.model.file}`),
+    fetchJSON(`${cfg.listBaseUrl}/${meta.model.metaFile}`)
+  ]);
+  const expected = modelMeta.classes.length * modelMeta.dims * 4;
+  if (coefBuf.byteLength !== expected) throw new Error("model size mismatch — refusing to apply");
+  await storeModel(coefBuf, modelMeta);
+  console.log(`[fenceline] synced content model v${modelMeta.version}`);
+  return modelMeta.version;
+}
+
 export async function checkAndSync(force = false) {
   const cfg = await getConfig();
   const st = await chrome.storage.local.get(["lastFullSync", "chunkState", "lastCheck"]);
@@ -127,6 +145,14 @@ export async function checkAndSync(force = false) {
     return { synced: false, reason: "meta-unreachable" };
   }
   await chrome.storage.local.set({ lastCheck: Date.now() });
+
+  // Model first (cheap, version-gated) so it tracks even an up-to-date list.
+  try {
+    const mv = await syncModel(cfg, meta);
+    if (mv) await chrome.storage.local.set({ modelVersion: mv });
+  } catch (e) {
+    console.warn("[fenceline] model sync failed", e.message);
+  }
 
   const currentVersion = await getStoredVersion();
   // Never re-download an identical version, even on a forced check. "Force"

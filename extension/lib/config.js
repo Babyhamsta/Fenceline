@@ -19,6 +19,13 @@ export const DEFAULTS = {
   // Also block iframes from blocked domains embedded in allowed pages.
   blockSubframes: true,
 
+  // Tier 3: the on-device content classifier. After a page loads, its rendered
+  // text is scored and the page is blocked if a blocked category clears the
+  // confidence threshold. Catches sites the lists miss. Admin can disable, or
+  // override the model's built-in threshold (null = use the model's own).
+  contentModelEnabled: true,
+  contentModelThreshold: null,
+
   // District allow/deny overrides (domains, subdomains included).
   allowDomains: [],
   extraBlockDomains: [],
