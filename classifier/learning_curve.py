@@ -16,7 +16,7 @@ def _run(module: str) -> None:
 def main() -> None:
     cfg = json.loads((ROOT / "poc.json").read_text(encoding="utf-8"))
     train_path = ROOT / cfg["paths"]["train"]
-    full = train_path.read_text("utf-8").splitlines()
+    full = [l for l in train_path.read_text("utf-8").split("\n") if l.strip()]
     backup = full[:]
     try:
         for n in (1000, 3000, 10000):

@@ -30,3 +30,15 @@ def test_prepare_filters_dedups_and_splits(tmp_path):
     assert len(kept) == 12                                    # dup collapsed
     etlds = [{r["etld1"] for r in s} for s in (train, val, test)]
     assert etlds[0].isdisjoint(etlds[2])                      # no leak
+
+
+def test_prepare_survives_unicode_line_separators_in_text(tmp_path):
+    # page text with U+2028 must not tear the JSON record (str.splitlines bug)
+    body = "games portal online play arcade racing puzzle   multiplayer fun "
+    recs = [{"etld1": f"g{i}.com", "url": f"https://g{i}.com", "label": "games",
+             "text": body + " ".join(f"u{i}w{j}" for j in range(22)),
+             "title": "g", "meta": "", "structural": {}} for i in range(4)]
+    raw = tmp_path / "raw.jsonl"
+    raw.write_text("\n".join(json.dumps(r) for r in recs) + "\n", encoding="utf-8")
+    train, val, test = prepare(raw, ratios=(0.7, 0.15, 0.15), seed=0)
+    assert len(train + val + test) == 4  # all parsed, none torn/dropped

@@ -14,10 +14,16 @@ ROOT = Path(__file__).resolve().parent
 def prepare(raw_path: Path, ratios: Tuple[float, float, float], seed: int
             ) -> Tuple[List[Dict], List[Dict], List[Dict]]:
     records: List[Dict] = []
-    for line in Path(raw_path).read_text(encoding="utf-8").splitlines():
+    # split on "\n" only — records are newline-terminated and json.dumps escapes
+    # real newlines, but NOT unicode line separators (U+2028/2029/85) that page
+    # text can contain; str.splitlines() would wrongly split a record on those.
+    for line in Path(raw_path).read_text(encoding="utf-8").split("\n"):
         if not line.strip():
             continue
-        records.append(json.loads(line))
+        try:
+            records.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
     records = [r for r in records if is_usable(r)]
     # dedup within each label so cross-category near-collisions are kept
     by_label: Dict[str, List[Dict]] = {}
