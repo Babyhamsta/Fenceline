@@ -28,9 +28,10 @@ def _matrix(records: List[dict]) -> Tuple[csr_matrix, List[str]]:
 def main() -> None:
     cfg = json.loads((ROOT / "poc.json").read_text(encoding="utf-8"))
     train = [json.loads(l) for l in
-             (ROOT / cfg["paths"]["train"]).read_text(encoding="utf-8").splitlines() if l.strip()]
+             (ROOT / cfg["paths"]["train"]).read_text(encoding="utf-8").split("\n")
+             if l.strip()]
     X, y = _matrix(train)
-    clf = LogisticRegression(max_iter=1000, class_weight="balanced", C=1.0)
+    clf = LogisticRegression(max_iter=1000, class_weight="balanced", C=4.0)
     clf.fit(X, y)
     np.savez(ROOT / cfg["paths"]["model"], coef=clf.coef_.astype(np.float32),
              intercept=clf.intercept_.astype(np.float32),
