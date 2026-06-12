@@ -346,6 +346,26 @@ async function main() {
     tail: { file: "tail.bin", sha256: sha256(tailBuf), count: entries.length },
     cats: { file: "cats.bin", sha256: sha256(catsBuf) }
   };
+
+  // Optional Tier-3 content model. If the classifier has exported one, publish
+  // it next to the lists and reference it (with its OWN version) so the
+  // extension pulls the ~1.3 MB weights only when the model itself changes —
+  // independent of the list version.
+  const modelSrc = join(ROOT, "classifier", "dist");
+  if (existsSync(join(modelSrc, "model.bin")) && existsSync(join(modelSrc, "model-meta.json"))) {
+    const modelBin = readFileSync(join(modelSrc, "model.bin"));
+    const modelMetaRaw = readFileSync(join(modelSrc, "model-meta.json"));
+    writeFileSync(join(DIST, "model.bin"), modelBin);
+    writeFileSync(join(DIST, "model-meta.json"), modelMetaRaw);
+    meta.model = {
+      file: "model.bin",
+      metaFile: "model-meta.json",
+      version: JSON.parse(modelMetaRaw.toString("utf8")).version,
+      sha256: sha256(modelBin)
+    };
+    console.log(`  model.bin ${(modelBin.length / 1048576).toFixed(2)} MB (v${meta.model.version})`);
+  }
+
   writeFileSync(join(DIST, "meta.json"), JSON.stringify(meta, null, 2));
   // Keep GitHub Pages from running Jekyll on the dist branch.
   writeFileSync(join(DIST, ".nojekyll"), "");

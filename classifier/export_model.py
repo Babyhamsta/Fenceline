@@ -37,6 +37,10 @@ def main() -> None:
         "dims": DIMS,
         "classes": classes,
         "intercept": [float(x) for x in intercept],
+        # Deploy params travel with the model so the extension blocks exactly as
+        # evaluated: only when the top blocked class clears block_threshold.
+        "clean_label": cfg["clean_label"],
+        "block_threshold": cfg.get("block_threshold", 0.9),
     }
     (dist / "model-meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     print(f"exported model.bin ({len(blob)} bytes), version {version}")
