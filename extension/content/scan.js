@@ -57,8 +57,11 @@
       .join(" ");
     const meta = clean(desc + " " + og);
     const body = document.body ? document.body.innerText : "";
-    const text = clean(body).split(" ").slice(0, TEXT_TOKEN_CAP).join(" ");
-    return { type: "scanPage", url: location.href, title, meta, text };
+    // Cap by tokens AND by chars: a glyph-cipher page (DaydreamX) maps spaces
+    // away, so it's one space-less mega-token — the char cap bounds it.
+    const text = clean(body).split(" ").slice(0, TEXT_TOKEN_CAP).join(" ").slice(0, 4000);
+    const lang = (document.documentElement.getAttribute("lang") || "").slice(0, 16);
+    return { type: "scanPage", url: location.href, title, meta, text, lang };
   }
 
   async function doScan() {
@@ -67,7 +70,9 @@
     // hidden/unsized at load but is large now still gets scanned.
     if (isSubframe && (window.innerWidth < 500 || window.innerHeight < 380)) return;
     const rec = extract();
-    if (rec.text.split(" ").length < 20) return; // thin/blank — no signal
+    // Thin/blank — no signal. Count non-space CHARS, not space-tokens: a glyph-
+    // cipher page maps spaces away, so token-counting would wrongly skip it.
+    if (rec.text.replace(/\s+/g, "").length < 80) return;
     if (rec.text === lastText) return; // content unchanged since last scan
     lastText = rec.text;
     lastScanAt = Date.now();

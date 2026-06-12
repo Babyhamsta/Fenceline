@@ -168,15 +168,76 @@ function looksLikeProxyUrl(url) {
   try {
     const rawPath = new URL(url).pathname;
     const path = rawPath.toLowerCase();
-    if (path.includes("https%3a%2f%2f") || path.includes("http%3a%2f%2f")) return true; // percent-encoded
-    if (path.includes("/https:/") || path.includes("/http:/")) return true;             // plain
-    for (const seg of rawPath.split("/")) if (_decodesToUrl(seg)) return true;           // base64
+    // Percent-encoded target (Scramjet & most): /scramjet/https%3A%2F%2Ftarget…
+    if (path.includes("https%3a%2f%2f") || path.includes("http%3a%2f%2f")) return true;
+    // Base64-encoded target (Ultraviolet / Bare service path): /service/aHR0cHM6Ly8…
+    for (const seg of rawPath.split("/")) if (_decodesToUrl(seg)) return true;
+    // NOTE: a PLAIN "/https:/<target>" in the path is deliberately NOT treated as
+    // a proxy tell. Legit archival/reader services embed the target URL plainly
+    // (web.archive.org, archive.ph, r.jina.ai, outline.com, cloudinary
+    // image/fetch) — stress-tested as 7/7 false positives. Real proxies percent-
+    // or base64-encode the target (handled above); an oddball plain-path proxy
+    // is still caught by the content scan and x-bare tiers.
     return false;
   } catch {
     return false;
   }
 }
 
+
+// ---- Tier 3b: glyph-cipher (font-substitution) obfuscation -------------
+// Some proxies (e.g. DaydreamX's font obfuscator) defeat the content model by
+// replacing every character in the DOM with a mapped character from a DIFFERENT
+// Unicode script, then rendering it back to the original glyphs with a custom
+// webfont. The page looks normal, but innerText is gibberish in the wrong
+// script, so the model has nothing to score. We turn that against them by
+// BEHAVIOUR, not names: a page that renders its text in a script contradicting
+// its declared language — or in the Private Use Area, which is never legitimate
+// body text — is running such a cipher. Robust because the cipher codepoints
+// MUST be present in the DOM for the page to render, so a content script always
+// sees them regardless of how the font/script files are named or obfuscated.
+const NON_LATIN_LANGS = new Set([
+  "zh", "ja", "ko", "ru", "uk", "be", "bg", "sr", "mk", "el", "ar", "fa", "ur",
+  "he", "yi", "hi", "bn", "pa", "gu", "ta", "te", "kn", "ml", "si", "th", "lo",
+  "my", "km", "ka", "hy", "am", "ti", "dv", "ps", "sd", "ckb", "mn", "ne", "mr", "as"
+]);
+function langScriptIsLatin(lang) {
+  if (!lang) return null; // unknown / not declared
+  const primary = String(lang).toLowerCase().split(/[-_]/)[0];
+  if (NON_LATIN_LANGS.has(primary)) return false;
+  return true; // en/es/fr/… and most others are Latin-script
+}
+function detectGlyphCipher(text, lang) {
+  if (!text) return false;
+  let latin = 0, digit = 0, foreign = 0, pua = 0;
+  for (const ch of text) {
+    const cp = ch.codePointAt(0);
+    if ((cp >= 0x41 && cp <= 0x5a) || (cp >= 0x61 && cp <= 0x7a) || (cp >= 0xc0 && cp <= 0x24f)) latin++;
+    else if (cp >= 0x30 && cp <= 0x39) digit++;
+    else if (
+      (cp >= 0x4e00 && cp <= 0x9fff) || (cp >= 0x3400 && cp <= 0x4dbf) || // CJK
+      (cp >= 0x3040 && cp <= 0x30ff) ||                                   // kana
+      (cp >= 0xac00 && cp <= 0xd7af) ||                                   // hangul
+      (cp >= 0x0400 && cp <= 0x04ff) ||                                   // cyrillic
+      (cp >= 0x0370 && cp <= 0x03ff)                                      // greek
+    ) foreign++;
+    else if (cp >= 0xe000 && cp <= 0xf8ff) { foreign++; pua++; }          // private use
+    // spaces / punctuation / symbols are ignored
+  }
+  const total = latin + digit + foreign;
+  if (total < 60) return false; // too little text to judge confidently
+  const foreignFrac = foreign / total;
+  if (pua >= 20 && foreignFrac > 0.5) return true; // PUA body text is never legitimate
+  const langLatin = langScriptIsLatin(lang);
+  // Declares a Latin-script language but renders almost entirely non-Latin, with
+  // essentially no Latin letters or digits — which a real foreign-language page
+  // always has some of (numerals, brand names, URLs). That's a script swap.
+  if (langLatin === true && foreignFrac > 0.85) return true;
+  // Language unknown: require near-total purity AND zero Latin/digits (the cipher
+  // maps digits away too) so a legit unlabeled foreign page is left alone.
+  if (langLatin === null && foreignFrac > 0.95 && latin === 0 && digit === 0) return true;
+  return false;
+}
 
 function isAllowed(hostname, cfg) {
   const h = hostname.toLowerCase();
@@ -298,15 +359,33 @@ chrome.webRequest.onHeadersReceived.addListener(
     if (details.type !== "main_frame" || details.tabId < 0) return;
     const ct = (details.responseHeaders || []).find((h) => h.name.toLowerCase() === "content-type");
     if (!ct || !/image\/svg\+xml/i.test(ct.value || "")) return;
-    const host = hostnameOf(details.url);
-    if (!host) return;
-    getConfig().then((cfg) => {
-      if (!isAllowed(host, cfg)) blockTab(details.tabId, host, "proxy-bypass", "proxy", null, true);
-    });
+    maybeBlockSvgApp(details.url, details.tabId);
   },
   { urls: ["*://*/*"], types: ["main_frame"] },
   ["responseHeaders"]
 );
+
+// A static SVG image is harmless; an SVG carrying a <foreignObject> is HTML
+// smuggled inside an image — the "app-as-image" trick. Fetch the (already-
+// cached) body and block ONLY when foreignObject is present, so legit top-level
+// SVGs (logos, badges, diagrams) are never touched. Stress-tested: 4 real SVGs
+// had 0 foreignObject; DaydreamX's index.svg had 2. We block but don't pin —
+// the host is shared CDN infrastructure and this check re-fires every visit.
+async function maybeBlockSvgApp(url, tabId) {
+  const host = hostnameOf(url);
+  if (!host) return;
+  const cfg = await getConfig();
+  if (isAllowed(host, cfg)) return;
+  let body;
+  try {
+    body = await (await fetch(url, { credentials: "omit" })).text();
+  } catch (e) {
+    return; // can't read body — fail open rather than risk a false positive on a real image
+  }
+  if (!/<foreignObject[\s/>]/i.test(body)) return;
+  console.log("[fenceline] blocked app-as-SVG:", host);
+  blockTab(tabId, host, "proxy-bypass", "proxy", null, true);
+}
 
 // ---- sync scheduling ---------------------------------------------------
 
@@ -417,7 +496,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const tabId = sender.tab && sender.tab.id;
       let hostname = isSub ? null : hostnameOf(msg.url);
       if (!hostname && tabId != null) hostname = lastRealHost.get(tabId) || hostnameOf(msg.url);
-      if (!cfg.contentModelEnabled || !hostname || isAllowed(hostname, cfg)) {
+      if (!hostname || isAllowed(hostname, cfg)) {
+        sendResponse({ blocked: false });
+        return;
+      }
+      // Glyph-cipher obfuscation is an evasion tell, not a content category, so
+      // block it as proxy-bypass even when the content model is disabled.
+      if (detectGlyphCipher(msg.text || "", msg.lang)) {
+        if (!isSub) await pinDomain(hostname, "proxy-bypass", 1);
+        blockTab(tabId, hostname, "proxy-bypass", "proxy", null, true);
+        sendResponse({ blocked: true });
+        return;
+      }
+      if (!cfg.contentModelEnabled) {
         sendResponse({ blocked: false });
         return;
       }
