@@ -87,7 +87,10 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   persistLastRealHost();
 });
 
-function shouldLog(tabId, domain) {
+// Records this tab+domain as the most recent block AND reports whether it
+// should be logged (not a dupe within 3 s). Named for the mutation: it always
+// updates dedupe state as a side effect.
+function markAndShouldLog(tabId, domain) {
   const prev = recentBlocks.get(tabId);
   const now = Date.now();
   recentBlocks.set(tabId, { domain, t: now });
@@ -98,10 +101,10 @@ function shouldLog(tabId, domain) {
 }
 
 // A loaded page can mount a beforeunload "Leave site?" trap to veto our
-// redirect (proxies do this). For post-load blocks we therefore force-replace
-// the tab — chrome.tabs.remove is programmatic and bypasses the dialog — instead
-// of navigating it. Pre-load blocks (list tier, pins) navigate in place to keep
-// "Go back" working.
+// redirect (proxies do this). For post-load blocks we therefore flip the
+// MAIN-world unload guard (content/unload-guard.js) to disarm that trap, then
+// navigate the tab in place with chrome.tabs.update. Pre-load blocks (list tier,
+// pins) navigate in place directly to keep "Go back" working.
 async function forceReplaceTab(tabId, url) {
   // Flip the MAIN-world guard (content/unload-guard.js) so the page's
   // beforeunload trap can't veto the navigation, then redirect in place.
@@ -127,7 +130,7 @@ async function forceReplaceTab(tabId, url) {
 // "district-policy". confidence (0..1) is set only for model blocks.
 async function blockTab(tabId, domain, category, source = "list", confidence = null, force = false) {
   if (tabId == null || tabId < 0) return;
-  if (shouldLog(tabId, domain)) recordBlock(domain, category, source);
+  if (markAndShouldLog(tabId, domain)) recordBlock(domain, category, source);
   let url =
     chrome.runtime.getURL("block/block.html") +
     `?d=${encodeURIComponent(domain)}&c=${encodeURIComponent(category)}` +
