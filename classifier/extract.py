@@ -1,5 +1,6 @@
 """Normalize a raw Playwright render into the canonical training record.
 Pure function so it is unit-testable and identical offline vs (later) on-device."""
+
 import re
 from typing import Dict
 

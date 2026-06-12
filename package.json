@@ -1,0 +1,21 @@
+{
+  "name": "fenceline",
+  "version": "1.4.0",
+  "private": true,
+  "type": "module",
+  "description": "Self-hosted, on-device CIPA content filtering for managed devices.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node test/selftest.mjs && node test/popup.mjs && node test/detect.mjs",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{js,mjs}\"",
+    "format:check": "prettier --check \"**/*.{js,mjs}\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "eslint": "^9.13.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.11.0",
+    "prettier": "^3.3.3"
+  }
+}

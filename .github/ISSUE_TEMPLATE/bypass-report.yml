@@ -1,0 +1,37 @@
+name: Filter bypass (I got past the filter)
+description: A way to reach a filtered category without being blocked.
+title: "[BYPASS] <short description>"
+labels: ["bypass", "security-sensitive"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ⚠️ **Stop if this is weaponizable.** A working, reproducible bypass that
+        students could copy is a security vulnerability — **report it privately**
+        via the repo's **Security → Report a vulnerability** tab, not here. See
+        [SECURITY.md](../blob/main/SECURITY.md).
+
+        Use this public form only for a bypass *class* or behaviour you can
+        describe without handing out a working recipe (e.g. "proxies using
+        transport X aren't detected"). When in doubt, report privately.
+  - type: textarea
+    id: what
+    attributes:
+      label: What you observed
+      description: The technique/class and what loaded that should have been blocked. Omit a copy-paste recipe if it's weaponizable.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Extension version
+      placeholder: 1.4.0
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Which tier you think is missing it, why it's behaviourally detectable, etc.
+    validations:
+      required: false

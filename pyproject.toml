@@ -1,0 +1,22 @@
+# Ruff lint + format config for the classifier/ Python code.
+# Kept light — drift prevention, not churn.
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".venv", "classifier/data", "**/__pycache__"]
+
+[tool.ruff.lint]
+# Deliberately light: pyflakes (F), pycodestyle (E, W), import sorting (I).
+# No pyupgrade/bugbear — their autofixes rewrite code, and classifier/fnv.py,
+# extract.py and vectorize.py are FROZEN CONTRACTS (changing them invalidates
+# every published artifact and the model). Formatting is whitespace-only and
+# guarded by the parity + unit tests.
+select = ["E", "W", "F", "I"]
+# E501 is owned by the formatter; E741/E702 are existing dense-script style in
+# the analysis tools (bakeoff/train/evaluate) — not worth churning. F (real
+# bugs: unused/undefined) and I (import order) stay on.
+ignore = ["E501", "E741", "E702"]
+
+[tool.ruff.format]
+quote-style = "double"

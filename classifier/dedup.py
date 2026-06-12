@@ -1,6 +1,7 @@
 """64-bit simhash over word tokens + Hamming-distance near-duplicate collapse.
 Template/affiliate farms render near-identical pages across thousands of
 domains; without this the model trains on the same page thousands of times."""
+
 import re
 from typing import Dict, List
 

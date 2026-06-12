@@ -30,13 +30,29 @@ const SRC = JSON.parse(readFileSync(join(ROOT, "compiler", "sources.json"), "utf
 const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/;
 const IP_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
 
+// The block-the-page-never-pin-the-origin baseline, shipped in meta.json.
+// One host per line; blank lines and # comments ignored.
+function readNoPinHosts() {
+  const path = join(ROOT, "compiler", "no-pin-hosts.txt");
+  if (!existsSync(path)) return [];
+  const out = [];
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    const h = line.replace(/#.*$/, "").trim().toLowerCase();
+    if (h) out.push(h);
+  }
+  return out;
+}
+
 function normalizeDomain(raw) {
   let d = raw.trim().toLowerCase();
   if (!d || d.startsWith("#") || d.startsWith("!")) return null;
   // hosts-format prefixes
   d = d.replace(/^(0\.0\.0\.0|127\.0\.0\.1|::1?|255\.255\.255\.255)\s+/, "");
   d = d.split(/[\s#]/)[0];
-  d = d.replace(/^\*\./, "").replace(/\.$/, "").replace(/^www\./, "");
+  d = d
+    .replace(/^\*\./, "")
+    .replace(/\.$/, "")
+    .replace(/^www\./, "");
   if (!d || d === "localhost" || d === "broadcasthost" || IP_RE.test(d)) return null;
   if (!/^[\x00-\x7f]+$/.test(d)) {
     try {
@@ -62,9 +78,19 @@ function parseUt1TarGz(buf, out) {
   const tar = gunzipSync(buf);
   let off = 0;
   while (off + 512 <= tar.length) {
-    const name = tar.subarray(off, off + 100).toString("utf8").replace(/\0.*$/, "");
+    const name = tar
+      .subarray(off, off + 100)
+      .toString("utf8")
+      .replace(/\0.*$/, "");
     if (!name) break;
-    const size = parseInt(tar.subarray(off + 124, off + 136).toString("utf8").replace(/\0.*$/, "").trim() || "0", 8);
+    const size = parseInt(
+      tar
+        .subarray(off + 124, off + 136)
+        .toString("utf8")
+        .replace(/\0.*$/, "")
+        .trim() || "0",
+      8
+    );
     const typeflag = tar[off + 156];
     off += 512;
     if (name.endsWith("/domains") && (typeflag === 48 /* '0' */ || typeflag === 0)) {
@@ -112,7 +138,10 @@ function loadTrancoRanks() {
   for (const line of text.split("\n")) {
     const comma = line.indexOf(",");
     if (comma === -1) continue;
-    const d = line.slice(comma + 1).trim().toLowerCase();
+    const d = line
+      .slice(comma + 1)
+      .trim()
+      .toLowerCase();
     if (d) ranks.set(d, ++n);
   }
   console.log(`Tranco ranking loaded: ${ranks.size.toLocaleString()} domains`);
@@ -189,7 +218,9 @@ async function main() {
           added++;
         }
       }
-      console.log(`  ${src.url || src.file}: ${found.length.toLocaleString()} parsed, ${added.toLocaleString()} new`);
+      console.log(
+        `  ${src.url || src.file}: ${found.length.toLocaleString()} parsed, ${added.toLocaleString()} new`
+      );
     }
   }
 
@@ -232,7 +263,9 @@ async function main() {
       }
     }
   }
-  console.log(`Pruned ${pruned.toLocaleString()} redundant subdomains -> ${domainCat.size.toLocaleString()} remain`);
+  console.log(
+    `Pruned ${pruned.toLocaleString()} redundant subdomains -> ${domainCat.size.toLocaleString()} remain`
+  );
 
   // 4) Tier 1 selection.
   const tier = SRC.dnrTier;
@@ -258,7 +291,9 @@ async function main() {
     console.log("No data/tranco.csv — Tier 1 fills by category priority.");
     dnrDomains = [...domainCat.keys()].slice(0, capacity);
   }
-  console.log(`Tier 1 (DNR): ${dnrDomains.length.toLocaleString()} domains (capacity ${capacity.toLocaleString()})`);
+  console.log(
+    `Tier 1 (DNR): ${dnrDomains.length.toLocaleString()} domains (capacity ${capacity.toLocaleString()})`
+  );
 
   // 5) Emit DNR chunks. Domains are packed into rules by BOTH a count cap
   //    and a serialized-size budget, so unusually long domain names can
@@ -344,7 +379,11 @@ async function main() {
     counts: { total: domainCat.size, dnrTier: dnrPlaced, rules: totalRules },
     chunks,
     tail: { file: "tail.bin", sha256: sha256(tailBuf), count: entries.length },
-    cats: { file: "cats.bin", sha256: sha256(catsBuf) }
+    cats: { file: "cats.bin", sha256: sha256(catsBuf) },
+    // Block-the-page-never-pin-the-origin hosts (compiler/no-pin-hosts.txt),
+    // synced so the fleet picks up additions in days, not a release cycle. The
+    // extension keeps a bundled copy of this same baseline as a pre-sync fallback.
+    noPinHosts: readNoPinHosts()
   };
 
   // Optional Tier-3 content model. If the classifier has exported one, publish
@@ -363,7 +402,9 @@ async function main() {
       version: JSON.parse(modelMetaRaw.toString("utf8")).version,
       sha256: sha256(modelBin)
     };
-    console.log(`  model.bin ${(modelBin.length / 1048576).toFixed(2)} MB (v${meta.model.version})`);
+    console.log(
+      `  model.bin ${(modelBin.length / 1048576).toFixed(2)} MB (v${meta.model.version})`
+    );
   }
 
   writeFileSync(join(DIST, "meta.json"), JSON.stringify(meta, null, 2));
@@ -371,8 +412,12 @@ async function main() {
   writeFileSync(join(DIST, ".nojekyll"), "");
 
   console.log(`\nWrote dist/: version ${version}`);
-  console.log(`  tail.bin  ${(tailBuf.length / 1048576).toFixed(1)} MB (${entries.length.toLocaleString()} domains)`);
-  console.log(`  dnr/      ${chunks.length} chunk(s), ${totalRules.toLocaleString()} rules, ${dnrPlaced.toLocaleString()} domains in Tier 1`);
+  console.log(
+    `  tail.bin  ${(tailBuf.length / 1048576).toFixed(1)} MB (${entries.length.toLocaleString()} domains)`
+  );
+  console.log(
+    `  dnr/      ${chunks.length} chunk(s), ${totalRules.toLocaleString()} rules, ${dnrPlaced.toLocaleString()} domains in Tier 1`
+  );
 }
 
 main().catch((e) => {

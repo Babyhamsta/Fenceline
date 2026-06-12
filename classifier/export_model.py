@@ -1,6 +1,7 @@
 """Export model.npz to the shippable artifact the JS path reads:
-  dist/model.bin        float32 coef, row-major [n_classes x DIMS]
-  dist/model-meta.json  classes, dims, intercepts, vectorizer id, version hash"""
+dist/model.bin        float32 coef, row-major [n_classes x DIMS]
+dist/model-meta.json  classes, dims, intercepts, vectorizer id, version hash"""
+
 import hashlib
 import json
 from pathlib import Path

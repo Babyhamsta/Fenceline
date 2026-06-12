@@ -10,7 +10,7 @@
 5. **Actions** tab → run **Build filter lists** manually once. It compiles and pushes
    artifacts to `gh-pages/lists/`. After Pages deploys, verify:
    `https://YOUR-ORG.github.io/fenceline/lists/meta.json`
-6. The workflow then runs daily. It only publishes when list content actually changed
+6. The workflow then runs every 2 days. It only publishes when list content actually changed
    (version is a content hash), and devices only download the full artifacts when the
    version changes **and** their `minDaysBetweenFullSync` throttle allows it.
 
@@ -79,6 +79,14 @@ select the **student OU** →
    This is the admin control channel: list URL, allow/deny overrides, block-page
    branding, and whether the report page's Clear/Export buttons work. Students
    cannot read or modify managed policy.
+
+**`extraNoPinHosts`** extends the block-the-page-never-pin-the-origin baseline.
+Fenceline ships a synced baseline of shared/path-multitenant hosts (Google Sites,
+archive.org, public CDNs…) that are blocked per harmful page but never *pinned*,
+so a single bad page can't over-block the whole service for everyone. Add your
+own shared hosts here — e.g. an internal archive or CDN your district runs — when
+a blocked page on them should not take the origin down. It never allowlists a
+host; use `allowDomains` for that.
 
 ## 5. Hardening checklist (this is most of the actual security)
 

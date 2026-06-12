@@ -1,5 +1,6 @@
 """Python reference scorer over the exported artifact — exists only so the JS
 parity test has something to compare against (same math as infer.mjs)."""
+
 import json
 import math
 from pathlib import Path
@@ -16,8 +17,9 @@ def classify_ref(text: str) -> dict:
     classes = meta["classes"]
     dims = meta["dims"]
     intercept = meta["intercept"]
-    coef = np.frombuffer((ROOT / "dist" / "model.bin").read_bytes(),
-                         dtype=np.float32).reshape(len(classes), dims)
+    coef = np.frombuffer((ROOT / "dist" / "model.bin").read_bytes(), dtype=np.float32).reshape(
+        len(classes), dims
+    )
     vec = vectorize(text)
     logits = []
     for ci in range(len(classes)):

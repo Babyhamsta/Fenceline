@@ -26,8 +26,7 @@ document.getElementById("source").textContent = srcText;
 // with the device's block log without exposing browsing history.
 const now = new Date();
 const ref =
-  `${category[0] || "x"}${source[0]}-` +
-  now.toISOString().slice(0, 16).replace(/[-:T]/g, "");
+  `${category[0] || "x"}${source[0]}-` + now.toISOString().slice(0, 16).replace(/[-:T]/g, "");
 document.getElementById("reference").textContent = ref.toUpperCase();
 document.getElementById("reference").title = now.toLocaleString();
 
@@ -47,7 +46,8 @@ chrome.runtime.sendMessage({ type: "status" }, (res) => {
   const { schoolName, supportContact, blockMessage } = res.config;
   if (schoolName) document.getElementById("school").textContent = schoolName;
   if (supportContact) {
-    document.getElementById("contact").textContent = "Think this is a mistake? Contact " + supportContact;
+    document.getElementById("contact").textContent =
+      "Think this is a mistake? Contact " + supportContact;
   }
   if (blockMessage) document.getElementById("message").textContent = blockMessage;
 });

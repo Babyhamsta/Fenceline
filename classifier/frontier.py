@@ -6,6 +6,7 @@ kept corpus grows monotonically toward the per-class target. The pool order is
 deterministic given a seed; it is the persisted attempt log — not the shuffle —
 that guarantees fresh draws across runs. The dataset does not expire, so a class
 that falls short today can be topped up by simply running again later."""
+
 import json
 import random
 from pathlib import Path
@@ -14,9 +15,14 @@ from typing import Dict, List, Set
 from classifier.filtering import is_usable
 
 
-def build_pools(tsv_path: Path, labels: List[str], seed: int = 0,
-                denylist: tuple = (), popular_first: tuple = (),
-                ranks: Dict[str, int] = None) -> Dict[str, List[str]]:
+def build_pools(
+    tsv_path: Path,
+    labels: List[str],
+    seed: int = 0,
+    denylist: tuple = (),
+    popular_first: tuple = (),
+    ranks: Dict[str, int] = None,
+) -> Dict[str, List[str]]:
     """Bucket dist/domains.tsv by label into draw order.
 
     ``denylist`` drops any domain containing one of its substrings (blogspot's
@@ -39,8 +45,7 @@ def build_pools(tsv_path: Path, labels: List[str], seed: int = 0,
     rng = random.Random(seed)
     for label in sorted(pools):
         if label in popular_first and ranks:
-            ranked = sorted((d for d in pools[label] if d in ranks),
-                            key=lambda d: ranks[d])
+            ranked = sorted((d for d in pools[label] if d in ranks), key=lambda d: ranks[d])
             unranked = [d for d in pools[label] if d not in ranks]
             rng.shuffle(unranked)
             pools[label] = ranked + unranked

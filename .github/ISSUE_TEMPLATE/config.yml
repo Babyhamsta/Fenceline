@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability or a weaponizable bypass (private)
+    url: https://github.com/Babyhamsta/Fenceline/security/advisories/new
+    about: Working bypasses, log tampering, and policy-escape findings — report privately, not as a public issue. See SECURITY.md.

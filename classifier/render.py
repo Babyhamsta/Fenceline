@@ -8,6 +8,7 @@ and ``page.new_page`` do not — a page whose JS main thread is wedged (common o
 anti-bot walls) would otherwise hang its worker forever. The deadline abandons
 such a page instead of blocking. The bulk scraper drives ``render_on_context``
 directly; ``render`` is a sync single-shot wrapper for ad-hoc/parity use."""
+
 import asyncio
 from typing import Dict, Optional
 
@@ -61,16 +62,16 @@ async def open_context(browser, timeout_ms: int = 15000):
     return ctx
 
 
-async def render_on_context(ctx, url: str, timeout_ms: int = 15000,
-                            hard_deadline: Optional[float] = None
-                            ) -> Optional[Dict]:
+async def render_on_context(
+    ctx, url: str, timeout_ms: int = 15000, hard_deadline: Optional[float] = None
+) -> Optional[Dict]:
     """Render one URL on an already-open context, bounded by a hard deadline so
     a wedged page can never block the worker. Returns the raw fields or None."""
+
     async def _do():
         page = await ctx.new_page()
         try:
-            await page.goto(url, wait_until="domcontentloaded",
-                            timeout=timeout_ms)
+            await page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
             await page.wait_for_timeout(800)  # let SPAs hydrate
             return await page.evaluate(_EXTRACT_JS)
         finally:
@@ -90,6 +91,7 @@ async def render_on_context(ctx, url: str, timeout_ms: int = 15000,
 def render(url: str, timeout_ms: int = 15000) -> Optional[Dict]:
     """Render one URL in a throwaway browser. Canonical single-shot path used by
     parity/ad-hoc checks; the bulk scraper reuses a browser via open_context."""
+
     async def _run():
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)

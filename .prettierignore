@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.venv/
+test/.tmp/
+classifier/data/
+data/
+**/__pycache__/
+*.bin
+*.npz

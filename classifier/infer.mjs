@@ -26,7 +26,7 @@ function* charNgrams(word) {
 }
 
 function tokens(text) {
-  const words = (text.toLowerCase().match(/[a-z0-9]+/g)) || [];
+  const words = text.toLowerCase().match(/[a-z0-9]+/g) || [];
   const out = [];
   for (let i = 0; i < words.length; i++) {
     out.push(words[i]);

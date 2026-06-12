@@ -1,6 +1,6 @@
 import math
 
-from classifier.vectorize import tokens, vectorize, DIMS
+from classifier.vectorize import DIMS, tokens, vectorize
 
 
 def test_tokens_word_and_char_ngrams():

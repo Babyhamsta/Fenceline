@@ -5,6 +5,12 @@ Pure Pillow; mirrors the geometry of extension/icons/fenceline-icon.svg
 exactly (viewBox 0..230) and supersamples for crisp anti-aliased edges.
 No SVG parser required.
 
+When to run: regenerate extension/icons/icon{16,32,48,128}.png after editing
+the source SVG (the manifest ships the PNGs, not the SVG).
+
+Dependency: Pillow (not in classifier/requirements.txt — this is a one-off
+build tool, not a runtime/test dep). Install ad hoc: pip install Pillow
+
 Run: python tools/render-icons.py
 """
 from pathlib import Path

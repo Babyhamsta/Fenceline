@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Keep the pinned action SHAs current (the build workflow publishes artifacts
+  # the whole fleet auto-downloads — it's the highest-value target in the repo).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Classifier Python dependencies (scikit-learn, playwright, tldextract, pytest).
+  - package-ecosystem: "pip"
+    directory: "/classifier"
+    schedule:
+      interval: "weekly"

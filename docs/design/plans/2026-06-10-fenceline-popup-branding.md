@@ -1,7 +1,5 @@
 # Fenceline Popup + Branding Refresh Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Add a uBlock-style toolbar popup showing quick stats + sync status, and refresh the extension's pages to lead with the Fenceline brand assets (icon + wordmark) consistently.
 
 **Architecture:** Purely additive/visual. A new browser-action popup reuses the existing `status` message and `stats` storage (no service-worker changes). A shared `brand.css` holds tokens + a `.brandbar` header used by the popup, report, and block pages. The icon SVG is rasterized to PNGs with Pillow.

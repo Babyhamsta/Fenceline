@@ -6,6 +6,7 @@ So we report metrics at that operating point (``block_threshold`` in poc.json),
 plus a threshold sweep showing the clean false-positive vs recall trade-off, and
 the raw-argmax numbers for reference. Also prints model size and Python
 inference latency (a proxy; on-device JS latency is measured separately)."""
+
 import json
 import time
 from pathlib import Path
@@ -41,12 +42,16 @@ def main() -> None:
     threshold = cfg.get("block_threshold", 0.9)
     meta = json.loads((ROOT / cfg["paths"]["dist"] / "model-meta.json").read_text("utf-8"))
     classes = meta["classes"]
-    coef = np.frombuffer((ROOT / cfg["paths"]["dist"] / "model.bin").read_bytes(),
-                         dtype=np.float32).reshape(len(classes), DIMS)
+    coef = np.frombuffer(
+        (ROOT / cfg["paths"]["dist"] / "model.bin").read_bytes(), dtype=np.float32
+    ).reshape(len(classes), DIMS)
     intercept = np.array(meta["intercept"], dtype=np.float32)
 
-    test = [json.loads(l) for l in
-            (ROOT / cfg["paths"]["test"]).read_text("utf-8").split("\n") if l.strip()]
+    test = [
+        json.loads(l)
+        for l in (ROOT / cfg["paths"]["test"]).read_text("utf-8").split("\n")
+        if l.strip()
+    ]
     y_true, probs, t0 = [], [], time.perf_counter()
     for rec in test:
         probs.append(_scores(rec, intercept, coef))
@@ -56,12 +61,15 @@ def main() -> None:
     # operating point
     y_pred = [_predict(p, classes, clean_label, threshold) for p in probs]
     pc = per_class(y_true, y_pred, classes)
-    print(f"\n=== operating point: block_threshold={threshold} "
-          f"(block only above this confidence) ===")
+    print(
+        f"\n=== operating point: block_threshold={threshold} (block only above this confidence) ==="
+    )
     print(f"{'category':<14}{'precision':>10}{'recall':>9}{'support':>9}")
     for lab in classes:
-        print(f"{lab:<14}{pc[lab]['precision']:>10.3f}{pc[lab]['recall']:>9.3f}"
-              f"{pc[lab]['support']:>9}")
+        print(
+            f"{lab:<14}{pc[lab]['precision']:>10.3f}{pc[lab]['recall']:>9.3f}"
+            f"{pc[lab]['support']:>9}"
+        )
     print(f"\nclean FP-rate:        {fp_rate_on_clean(y_true, y_pred, clean_label):.3f}")
 
     # threshold sweep: clean FP vs overall block-recall
@@ -70,10 +78,12 @@ def main() -> None:
     clean_total = sum(1 for y in y_true if y == clean_label)
     for t in (0.50, 0.70, 0.80, 0.90, 0.95, 0.99):
         preds = [_predict(p, classes, clean_label, t) for p in probs]
-        fp = sum(1 for yt, yp in zip(y_true, preds)
-                 if yt == clean_label and yp != clean_label) / max(1, clean_total)
-        rec = sum(1 for yt, yp in zip(y_true, preds)
-                  if yt != clean_label and yp != clean_label) / max(1, blocked_total)
+        fp = sum(
+            1 for yt, yp in zip(y_true, preds) if yt == clean_label and yp != clean_label
+        ) / max(1, clean_total)
+        rec = sum(
+            1 for yt, yp in zip(y_true, preds) if yt != clean_label and yp != clean_label
+        ) / max(1, blocked_total)
         print(f"{t:>10.2f}{fp:>10.3f}{rec:>16.3f}")
 
     size_mb = (ROOT / cfg["paths"]["dist"] / "model.bin").stat().st_size / 1e6

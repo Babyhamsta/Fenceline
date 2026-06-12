@@ -5,7 +5,7 @@
 export const DEFAULTS = {
   // Base URL of the published list artifacts (your GitHub Pages site).
   // Override per-district via managed policy.
-  listBaseUrl: "https://YOUR-ORG.github.io/fenceline/lists",
+  listBaseUrl: "https://babyhamsta.github.io/Fenceline/lists",
 
   // How often to check meta.json for a new list version (cheap: ~1 KB,
   // served with ETag so unchanged checks are 304s).
@@ -30,6 +30,11 @@ export const DEFAULTS = {
   allowDomains: [],
   extraBlockDomains: [],
 
+  // Extra block-the-page-never-pin-the-origin hosts, merged on top of the synced
+  // baseline. For shared/path-multitenant hosts a district runs (an internal
+  // archive, a CDN) that should be blocked per-page but never pinned/over-blocked.
+  extraNoPinHosts: [],
+
   // Report page controls.
   allowClearLogs: false,
   allowExport: true,
@@ -53,7 +58,14 @@ export async function getConfig() {
   }
   // Normalize
   cfg.listBaseUrl = String(cfg.listBaseUrl).replace(/\/+$/, "");
-  cfg.allowDomains = (cfg.allowDomains || []).map((d) => String(d).toLowerCase().trim()).filter(Boolean);
-  cfg.extraBlockDomains = (cfg.extraBlockDomains || []).map((d) => String(d).toLowerCase().trim()).filter(Boolean);
+  cfg.allowDomains = (cfg.allowDomains || [])
+    .map((d) => String(d).toLowerCase().trim())
+    .filter(Boolean);
+  cfg.extraBlockDomains = (cfg.extraBlockDomains || [])
+    .map((d) => String(d).toLowerCase().trim())
+    .filter(Boolean);
+  cfg.extraNoPinHosts = (cfg.extraNoPinHosts || [])
+    .map((d) => String(d).toLowerCase().trim())
+    .filter(Boolean);
   return cfg;
 }

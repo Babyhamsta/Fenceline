@@ -5,13 +5,20 @@ keeping them teaches the model that boilerplate maps to whatever label the page
 sat behind — e.g. a gambling site stuck behind Cloudflare would push "ray id"
 toward `clean`, causing under-blocking. Also doubles as a blocklist liveness
 audit downstream."""
+
 from typing import Dict
 
 MIN_TOKENS = 20
 _PARK_MARKERS = (
-    "domain is for sale", "buy this domain", "this domain is parked",
-    "domain parking", "is for sale", "purchase this domain",
-    "godaddy", "sedo", "hugedomains",
+    "domain is for sale",
+    "buy this domain",
+    "this domain is parked",
+    "domain parking",
+    "is for sale",
+    "purchase this domain",
+    "godaddy",
+    "sedo",
+    "hugedomains",
 )
 # Multi-word signatures specific to bot-walls/challenge pages — chosen to be
 # phrases real content almost never contains, to avoid dropping genuine pages.

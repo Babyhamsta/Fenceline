@@ -1,4 +1,4 @@
-from classifier.dedup import simhash, hamming, dedup
+from classifier.dedup import dedup, hamming, simhash
 
 
 def test_identical_text_same_hash():
@@ -14,8 +14,9 @@ def test_near_duplicate_low_distance():
 def test_dedup_collapses_template_farm():
     base = "play free online games puzzles racing arcade multiplayer fun"
     recs = [{"text": base + f" mirror {i}", "etld1": f"site{i}.com"} for i in range(5)]
-    recs.append({"text": "online casino real money blackjack roulette slots bet",
-                 "etld1": "casino.com"})
+    recs.append(
+        {"text": "online casino real money blackjack roulette slots bet", "etld1": "casino.com"}
+    )
     kept = dedup(recs, max_distance=4)
     # the 5 near-identical game mirrors collapse to 1; casino stays
     assert len(kept) == 2

@@ -1,5 +1,6 @@
 """filter -> dedup -> eTLD+1 split. Writes train/val/test JSONL when run as a
 script; `prepare()` is the unit-testable core."""
+
 import json
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -11,8 +12,9 @@ from classifier.splitting import split_by_etld1
 ROOT = Path(__file__).resolve().parent
 
 
-def prepare(raw_path: Path, ratios: Tuple[float, float, float], seed: int
-            ) -> Tuple[List[Dict], List[Dict], List[Dict]]:
+def prepare(
+    raw_path: Path, ratios: Tuple[float, float, float], seed: int
+) -> Tuple[List[Dict], List[Dict], List[Dict]]:
     records: List[Dict] = []
     # split on "\n" only — records are newline-terminated and json.dumps escapes
     # real newlines, but NOT unicode line separators (U+2028/2029/85) that page
@@ -41,8 +43,9 @@ def main() -> None:
     train, val, test = prepare(ROOT / paths["raw"], (0.7, 0.15, 0.15), seed=0)
     for name, rows in (("train", train), ("val", val), ("test", test)):
         out = ROOT / paths[name]
-        out.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows)
-                       + "\n", encoding="utf-8")
+        out.write_text(
+            "\n".join(json.dumps(r, ensure_ascii=False) for r in rows) + "\n", encoding="utf-8"
+        )
         print(f"{name}: {len(rows)} rows -> {out}")
 
 
