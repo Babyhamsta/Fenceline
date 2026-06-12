@@ -58,6 +58,18 @@ async function blockTab(tabId, domain, category, source = "list", confidence = n
 let pinned = null; // Map<registrableDomain, {category, confidence}>
 const PIN_CAP = 2000;
 
+// Hosts that serve many independent sites under one hostname (path-multitenant).
+// We still block the specific page, but never pin the bare host — pinning
+// sites.google.com would block ALL Google Sites fleet-wide. These get re-scanned
+// on each visit instead.
+const NO_PIN_HOSTS = new Set([
+  "sites.google.com",
+  "script.google.com",
+  "storage.googleapis.com",
+  "docs.google.com",
+  "drive.google.com"
+]);
+
 async function loadPins() {
   if (pinned) return pinned;
   const { modelPinned = {} } = await chrome.storage.local.get(["modelPinned"]);
@@ -66,6 +78,7 @@ async function loadPins() {
 }
 
 async function pinDomain(domain, category, confidence) {
+  if (NO_PIN_HOSTS.has(domain)) return; // block the page, but don't over-block the host
   const p = await loadPins();
   if (p.has(domain)) return;
   p.set(domain, { category, confidence });
