@@ -9,5 +9,11 @@ dist/
 # Scraped corpus — NOT redistributed (see classifier design spec)
 classifier/data/
 
+# Tranco top-sites CSV — downloaded by the GitHub Action, not committed
+data/tranco.csv
+
+# Local pre-change backups
+.backups/
+
 # Test scratch
 test/.tmp/
