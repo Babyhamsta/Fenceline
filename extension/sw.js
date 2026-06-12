@@ -53,12 +53,23 @@ function shouldLog(tabId, domain) {
 // of navigating it. Pre-load blocks (list tier, pins) navigate in place to keep
 // "Go back" working.
 async function forceReplaceTab(tabId, url) {
+  // Flip the MAIN-world guard (content/unload-guard.js) so the page's
+  // beforeunload trap can't veto the navigation, then redirect in place.
   try {
-    const tab = await chrome.tabs.get(tabId);
-    await chrome.tabs.create({ url, index: tab.index + 1, active: true, windowId: tab.windowId });
-    await chrome.tabs.remove(tabId);
+    await chrome.scripting.executeScript({
+      target: { tabId, allFrames: true },
+      world: "MAIN",
+      func: () => {
+        window.__fenceline_suppress = true;
+      }
+    });
   } catch (e) {
-    try { await chrome.tabs.update(tabId, { url }); } catch (e2) {}
+    // Restricted page or no scripting access — still attempt the redirect.
+  }
+  try {
+    await chrome.tabs.update(tabId, { url });
+  } catch (e) {
+    // Tab may already be gone.
   }
 }
 
