@@ -1,0 +1,49 @@
+name: False positive (a safe site got blocked)
+description: A legitimate site was blocked. These reports seed list/model fixes.
+title: "[FP] <domain> blocked as <category>"
+labels: ["false-positive"]
+body:
+  - type: input
+    id: domain
+    attributes:
+      label: Domain
+      description: The exact domain on the block page (the `d=` value).
+      placeholder: example.org
+    validations:
+      required: true
+  - type: input
+    id: category
+    attributes:
+      label: Category shown
+      description: The category on the block page (e.g. games, adult, proxy-bypass).
+      placeholder: games
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Block source
+      description: Shown on the block page as the source of the block.
+      options:
+        - list (DNR/tail blocklist)
+        - model (content classifier)
+        - proxy (evasion detector)
+        - district-policy (admin extraBlockDomains)
+        - not sure
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Extension version
+      description: From chrome://extensions or the manifest.
+      placeholder: 1.4.0
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Screenshot and details
+      description: Paste a screenshot of the block page and anything else relevant.
+    validations:
+      required: false
