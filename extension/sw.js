@@ -47,19 +47,39 @@ function shouldLog(tabId, domain) {
   return !(prev && prev.domain === domain && now - prev.t < 3000);
 }
 
-// source: "list" (DNR/tail), "model" (content classifier), "district-policy".
-// confidence (0..1) is set only for model blocks — surfaced on the block page.
-async function blockTab(tabId, domain, category, source = "list", confidence = null) {
+// A loaded page can mount a beforeunload "Leave site?" trap to veto our
+// redirect (proxies do this). For post-load blocks we therefore force-replace
+// the tab — chrome.tabs.remove is programmatic and bypasses the dialog — instead
+// of navigating it. Pre-load blocks (list tier, pins) navigate in place to keep
+// "Go back" working.
+async function forceReplaceTab(tabId, url) {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    await chrome.tabs.create({ url, index: tab.index + 1, active: true, windowId: tab.windowId });
+    await chrome.tabs.remove(tabId);
+  } catch (e) {
+    try { await chrome.tabs.update(tabId, { url }); } catch (e2) {}
+  }
+}
+
+// source: "list" (DNR/tail), "model" (content classifier), "proxy",
+// "district-policy". confidence (0..1) is set only for model blocks.
+async function blockTab(tabId, domain, category, source = "list", confidence = null, force = false) {
+  if (tabId == null || tabId < 0) return;
   if (shouldLog(tabId, domain)) recordBlock(domain, category, source);
   let url =
     chrome.runtime.getURL("block/block.html") +
     `?d=${encodeURIComponent(domain)}&c=${encodeURIComponent(category)}` +
     `&s=${encodeURIComponent(source)}`;
   if (confidence != null) url += `&conf=${Math.round(confidence * 100)}`;
-  try {
-    await chrome.tabs.update(tabId, { url });
-  } catch (e) {
-    // Tab may already be gone.
+  if (force) {
+    await forceReplaceTab(tabId, url);
+  } else {
+    try {
+      await chrome.tabs.update(tabId, { url });
+    } catch (e) {
+      // Tab may already be gone.
+    }
   }
 }
 
@@ -228,11 +248,11 @@ async function blockProxyHost(host, tabId) {
   if (isAllowed(host, cfg)) return false;
   await pinDomain(host, "proxy-bypass", 1);
   if (tabId >= 0) {
-    blockTab(tabId, host, "proxy-bypass", "proxy");
+    blockTab(tabId, host, "proxy-bypass", "proxy", null, true);
   } else {
-    // Request came from the proxy's service worker (no tab) — redirect whatever
+    // Request came from the proxy's service worker (no tab) — replace whatever
     // tab is sitting on that host.
-    for (const [tid, h] of lastRealHost) if (h === host) blockTab(tid, host, "proxy-bypass", "proxy");
+    for (const [tid, h] of lastRealHost) if (h === host) blockTab(tid, host, "proxy-bypass", "proxy", null, true);
   }
   return true;
 }
@@ -374,7 +394,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         // while a legit page with one large same-origin section isn't broken
         // forever.
         if (!isSub) await pinDomain(hostname, verdict.category, verdict.confidence);
-        blockTab(tabId, hostname, verdict.category, "model", verdict.confidence);
+        blockTab(tabId, hostname, verdict.category, "model", verdict.confidence, true);
         sendResponse({ blocked: true });
       } else {
         sendResponse({ blocked: false });
