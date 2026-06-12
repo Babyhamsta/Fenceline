@@ -27,7 +27,12 @@ export function svgHasExecutableContent(body) {
     const tm = (m[2] || "").match(/\btype\s*=\s*["']?\s*([^"'\s>]+)/i);
     if (!tm) return true; // no type attribute → executable JS by default
     const t = tm[1].toLowerCase();
-    if (t === "module" || t === "text/javascript" || t === "application/javascript" || /(^|\/)(java|ecma)script$/.test(t)) {
+    if (
+      t === "module" ||
+      t === "text/javascript" ||
+      t === "application/javascript" ||
+      /(^|\/)(java|ecma)script$/.test(t)
+    ) {
       return true;
     }
   }

@@ -1,5 +1,6 @@
 """Registrable-domain (eTLD+1) extraction. Used to split train/test so a site's
 subdomains never straddle the split (which would inflate accuracy)."""
+
 import tldextract
 
 _extract = tldextract.TLDExtract(suffix_list_urls=())  # offline, bundled snapshot

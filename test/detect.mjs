@@ -9,7 +9,15 @@
 import { looksLikeProxyUrl, _decodesToUrl } from "../extension/lib/detect/proxy-url.js";
 import { detectGlyphCipher } from "../extension/lib/detect/glyph-cipher.js";
 import { svgHasForeignObject, svgHasExecutableContent } from "../extension/lib/detect/svg-app.js";
-import { isNoPinHost, pinnedHit, capPins, createPinStore, buildNoPinHosts, NO_PIN_HOSTS, PIN_CAP } from "../extension/lib/pins.js";
+import {
+  isNoPinHost,
+  pinnedHit,
+  capPins,
+  createPinStore,
+  buildNoPinHosts,
+  NO_PIN_HOSTS,
+  PIN_CAP
+} from "../extension/lib/pins.js";
 
 let failures = 0;
 function ok(cond, msg) {
@@ -34,10 +42,7 @@ section("detect/proxy-url");
   );
   // Ultraviolet / Bare base64 service path → proxy.
   const uvSeg = btoa("https://gamesito.com/index.html?play=1");
-  ok(
-    looksLikeProxyUrl(`https://prox.example/service/${uvSeg}`),
-    "Ultraviolet base64 path → true"
-  );
+  ok(looksLikeProxyUrl(`https://prox.example/service/${uvSeg}`), "Ultraviolet base64 path → true");
   // Legit archival service embeds the target URL PLAINLY — a documented 7/7 FP.
   ok(
     !looksLikeProxyUrl("https://web.archive.org/web/2024/https://target.com/game"),
@@ -55,7 +60,10 @@ section("detect/proxy-url");
     "base64 segment that isn't a URL → false"
   );
   // Direct _decodesToUrl contract.
-  ok(_decodesToUrl(btoa("https://gamesito.example/play/index.html")), "_decodesToUrl(full url) → true");
+  ok(
+    _decodesToUrl(btoa("https://gamesito.example/play/index.html")),
+    "_decodesToUrl(full url) → true"
+  );
   ok(!_decodesToUrl(btoa("not-a-url-payload-long-enough")), "_decodesToUrl(non-url) → false");
   ok(!_decodesToUrl("short"), "_decodesToUrl(too short) → false");
 }
@@ -80,7 +88,9 @@ section("detect/glyph-cipher");
   ok(!detectGlyphCipher(hanProse, "zh"), "high-distinct Han prose → false");
 
   // PUA icon font: many distinct glyphs, each used roughly once.
-  const puaIcons = range(0xe000, 200).map((cp) => String.fromCodePoint(cp)).join("");
+  const puaIcons = range(0xe000, 200)
+    .map((cp) => String.fromCodePoint(cp))
+    .join("");
   ok(!detectGlyphCipher(puaIcons, "en"), "PUA icon-font page → false");
 
   // Latin lang declared, body rendered entirely in Cyrillic, no ASCII/digits.
@@ -125,7 +135,13 @@ section("detect/svg-app");
 section("lib/pins");
 {
   // P0.4 regression: cap eviction trims the Map itself, FIFO insertion order.
-  const m = new Map([["a", 1], ["b", 2], ["c", 3], ["d", 4], ["e", 5]]);
+  const m = new Map([
+    ["a", 1],
+    ["b", 2],
+    ["c", 3],
+    ["d", 4],
+    ["e", 5]
+  ]);
   capPins(m, 3);
   ok(m.size === 3, "capPins trims Map to cap");
   ok(!m.has("a") && !m.has("b") && m.has("c") && m.has("e"), "capPins evicts oldest first (FIFO)");
@@ -139,8 +155,14 @@ section("lib/pins");
   // pinnedHit longest-suffix-first walk.
   const p1 = new Map([["example.com", { category: "games" }]]);
   ok(pinnedHit("a.b.example.com", p1) === "example.com", "pinnedHit finds registrable suffix");
-  const p2 = new Map([["b.example.com", {}], ["example.com", {}]]);
-  ok(pinnedHit("a.b.example.com", p2) === "b.example.com", "pinnedHit prefers most-specific suffix");
+  const p2 = new Map([
+    ["b.example.com", {}],
+    ["example.com", {}]
+  ]);
+  ok(
+    pinnedHit("a.b.example.com", p2) === "b.example.com",
+    "pinnedHit prefers most-specific suffix"
+  );
   ok(pinnedHit("nothing.here", p1) === null, "pinnedHit miss → null");
 
   // createPinStore against a fake storage area: write-through, dedupe, no-pin skip.
@@ -173,7 +195,10 @@ section("lib/pins");
   const store2 = createPinStore(fs2);
   for (let i = 0; i < PIN_CAP + 5; i++) await store2.pin(`d${i}.com`, "games", 1);
   ok(Object.keys(fs2.current()).length === PIN_CAP, "store enforces PIN_CAP");
-  ok(!("d0.com" in fs2.current()) && `d${PIN_CAP + 4}.com` in fs2.current(), "store evicts oldest, keeps newest");
+  ok(
+    !("d0.com" in fs2.current()) && `d${PIN_CAP + 4}.com` in fs2.current(),
+    "store evicts oldest, keeps newest"
+  );
 
   // The store consults its no-pin getter live (P2.2 dynamic set).
   const fs3 = fakeStorage();
@@ -196,7 +221,10 @@ section("lib/pins buildNoPinHosts");
   ok(!merged.has("archive.org"), "non-empty synced baseline replaces the bundled set");
 
   const emptyBaseline = buildNoPinHosts([], ["bar.example"]);
-  ok(isNoPinHost("archive.org", emptyBaseline) && emptyBaseline.has("bar.example"), "empty baseline falls back, extras still merged");
+  ok(
+    isNoPinHost("archive.org", emptyBaseline) && emptyBaseline.has("bar.example"),
+    "empty baseline falls back, extras still merged"
+  );
 
   ok(buildNoPinHosts(["UPPER.example"]).has("upper.example"), "entries lowercased");
 }

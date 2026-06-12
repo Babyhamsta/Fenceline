@@ -51,7 +51,8 @@ export function isNoPinHost(host, noPinHosts = NO_PIN_HOSTS) {
 // when nothing has synced yet) ∪ district extras (extraNoPinHosts policy key).
 // Block-the-page-never-pin semantics only — this never allows a host.
 export function buildNoPinHosts(syncedBaseline, extras = []) {
-  const base = Array.isArray(syncedBaseline) && syncedBaseline.length ? syncedBaseline : NO_PIN_HOSTS;
+  const base =
+    Array.isArray(syncedBaseline) && syncedBaseline.length ? syncedBaseline : NO_PIN_HOSTS;
   const out = new Set();
   for (const h of base) out.add(String(h).toLowerCase());
   for (const h of extras) {

@@ -113,7 +113,10 @@ async function render() {
     .slice(0, 25);
   document.querySelector("#top-domains tbody").innerHTML = top.length
     ? top
-        .map(([d, n]) => `<tr><td class="mono">${esc(d)}</td><td class="count">${n.toLocaleString()}</td></tr>`)
+        .map(
+          ([d, n]) =>
+            `<tr><td class="mono">${esc(d)}</td><td class="count">${n.toLocaleString()}</td></tr>`
+        )
         .join("")
     : '<tr><td colspan="2" class="empty">Nothing yet.</td></tr>';
 
@@ -156,14 +159,22 @@ document.getElementById("export-csv").addEventListener("click", () => {
   for (const [c, n] of Object.entries(statsCache.byCategory || {}).sort((a, b) => b[1] - a[1])) {
     lines.push(`"${c.replace(/"/g, '""')}",${n}`);
   }
-  download(`fenceline-report-${new Date().toISOString().slice(0, 10)}.csv`, "text/csv", lines.join("\n"));
+  download(
+    `fenceline-report-${new Date().toISOString().slice(0, 10)}.csv`,
+    "text/csv",
+    lines.join("\n")
+  );
 });
 
 document.getElementById("export-json").addEventListener("click", () => {
   download(
     `fenceline-report-${new Date().toISOString().slice(0, 10)}.json`,
     "application/json",
-    JSON.stringify({ exported: new Date().toISOString(), stats: statsCache, recentEvents: eventsCache }, null, 2)
+    JSON.stringify(
+      { exported: new Date().toISOString(), stats: statsCache, recentEvents: eventsCache },
+      null,
+      2
+    )
   );
 });
 

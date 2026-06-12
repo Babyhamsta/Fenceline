@@ -10,6 +10,7 @@ probes whether nonlinearity earns its extra bytes. Heavyweight options (static
 embeddings, tiny transformers) are intentionally out of scope — they exceed the
 "super lightweight, runs in a content script" budget by 1-2 orders of magnitude.
 Run: python -m classifier.bakeoff"""
+
 import json
 import math
 import time
@@ -33,8 +34,11 @@ THRESHOLD = 0.9
 
 def _load(name):
     cfg = json.loads((ROOT / "poc.json").read_text(encoding="utf-8"))
-    rows = [json.loads(l) for l in
-            (ROOT / cfg["paths"][name]).read_text("utf-8").split("\n") if l.strip()]
+    rows = [
+        json.loads(l)
+        for l in (ROOT / cfg["paths"][name]).read_text("utf-8").split("\n")
+        if l.strip()
+    ]
     return rows, cfg["clean_label"]
 
 
@@ -48,7 +52,9 @@ def _matrix(rows, dims):
             acc[idx] = acc.get(idx, 0.0) + (-1.0 if (h >> 31) & 1 else 1.0)
         norm = math.sqrt(sum(x * x for x in acc.values())) or 1.0
         for idx, val in acc.items():
-            r.append(i); c.append(idx); v.append(val / norm)
+            r.append(i)
+            c.append(idx)
+            v.append(val / norm)
         y.append(rec["label"])
     return csr_matrix((v, (r, c)), shape=(len(rows), dims)), y
 
@@ -56,7 +62,7 @@ def _matrix(rows, dims):
 def _proba(model, X):
     if hasattr(model, "predict_proba"):
         return model.predict_proba(X)
-    d = model.decision_function(X)            # LinearSVC: softmax the margins
+    d = model.decision_function(X)  # LinearSVC: softmax the margins
     e = np.exp(d - d.max(axis=1, keepdims=True))
     return e / e.sum(axis=1, keepdims=True)
 
@@ -99,14 +105,48 @@ def main():
     # with the features we actually ship. LinearSVC is sigmoid-calibrated so its
     # confidence threshold is meaningful (raw SVM margins are not probabilities).
     candidates = [
-        ("logreg C=1   d=65536", 65536, LogisticRegression(max_iter=1000, C=1.0, class_weight="balanced")),
-        ("logreg C=4   d=65536", 65536, LogisticRegression(max_iter=1000, C=4.0, class_weight="balanced")),
-        ("logreg C=8   d=65536", 65536, LogisticRegression(max_iter=1000, C=8.0, class_weight="balanced")),
-        ("svc-calib    d=65536", 65536, CalibratedClassifierCV(LinearSVC(C=1.0, class_weight="balanced"), method="sigmoid", cv=3)),
-        ("sgd-log      d=65536", 65536, SGDClassifier(loss="log_loss", class_weight="balanced", max_iter=30, random_state=0)),
-        ("logreg C=4   d=16384", 16384, LogisticRegression(max_iter=1000, C=4.0, class_weight="balanced")),
-        ("logreg C=4   d= 4096", 4096, LogisticRegression(max_iter=1000, C=4.0, class_weight="balanced")),
-        ("mlp(128)     d= 8192", 8192, MLPClassifier(hidden_layer_sizes=(128,), max_iter=40, random_state=0)),
+        (
+            "logreg C=1   d=65536",
+            65536,
+            LogisticRegression(max_iter=1000, C=1.0, class_weight="balanced"),
+        ),
+        (
+            "logreg C=4   d=65536",
+            65536,
+            LogisticRegression(max_iter=1000, C=4.0, class_weight="balanced"),
+        ),
+        (
+            "logreg C=8   d=65536",
+            65536,
+            LogisticRegression(max_iter=1000, C=8.0, class_weight="balanced"),
+        ),
+        (
+            "svc-calib    d=65536",
+            65536,
+            CalibratedClassifierCV(
+                LinearSVC(C=1.0, class_weight="balanced"), method="sigmoid", cv=3
+            ),
+        ),
+        (
+            "sgd-log      d=65536",
+            65536,
+            SGDClassifier(loss="log_loss", class_weight="balanced", max_iter=30, random_state=0),
+        ),
+        (
+            "logreg C=4   d=16384",
+            16384,
+            LogisticRegression(max_iter=1000, C=4.0, class_weight="balanced"),
+        ),
+        (
+            "logreg C=4   d= 4096",
+            4096,
+            LogisticRegression(max_iter=1000, C=4.0, class_weight="balanced"),
+        ),
+        (
+            "mlp(128)     d= 8192",
+            8192,
+            MLPClassifier(hidden_layer_sizes=(128,), max_iter=40, random_state=0),
+        ),
     ]
 
     # build matrices once per distinct dim
@@ -114,19 +154,28 @@ def main():
     Xtr = {d: _matrix(train, d) for d in dims_needed}
     Xte = {d: _matrix(test, d) for d in dims_needed}
 
-    print(f"\ntrain={len(train)} test={len(test)} classes={classes} "
-          f"threshold={THRESHOLD}\n")
-    hdr = (f"{'model':<22}{'argmaxAcc':>10}{'macroF1':>9}{'cleanFP@.9':>11}"
-           f"{'blkRec@.9':>10}{'size MB':>9}{'train s':>9}{'ms/doc':>8}")
-    print(hdr); print("-" * len(hdr))
+    print(f"\ntrain={len(train)} test={len(test)} classes={classes} threshold={THRESHOLD}\n")
+    hdr = (
+        f"{'model':<22}{'argmaxAcc':>10}{'macroF1':>9}{'cleanFP@.9':>11}"
+        f"{'blkRec@.9':>10}{'size MB':>9}{'train s':>9}{'ms/doc':>8}"
+    )
+    print(hdr)
+    print("-" * len(hdr))
     for name, dims, model in candidates:
-        Xt, ytr = Xtr[dims]; Xv, yte = Xte[dims]
-        t0 = time.perf_counter(); model.fit(Xt, ytr); train_s = time.perf_counter() - t0
-        t1 = time.perf_counter(); _proba(model, Xv); ms = (time.perf_counter() - t1) / max(1, Xv.shape[0]) * 1000
+        Xt, ytr = Xtr[dims]
+        Xv, yte = Xte[dims]
+        t0 = time.perf_counter()
+        model.fit(Xt, ytr)
+        train_s = time.perf_counter() - t0
+        t1 = time.perf_counter()
+        _proba(model, Xv)
+        ms = (time.perf_counter() - t1) / max(1, Xv.shape[0]) * 1000
         acc, macro, fp, rec = _metrics(model, np.array(classes), clean, Xv, yte)
         size = _size_mb(model, dims, len(classes))
-        print(f"{name:<22}{acc:>10.3f}{macro:>9.3f}{fp:>11.3f}"
-              f"{rec:>10.3f}{size:>9.2f}{train_s:>9.1f}{ms:>8.3f}")
+        print(
+            f"{name:<22}{acc:>10.3f}{macro:>9.3f}{fp:>11.3f}"
+            f"{rec:>10.3f}{size:>9.2f}{train_s:>9.1f}{ms:>8.3f}"
+        )
 
 
 if __name__ == "__main__":

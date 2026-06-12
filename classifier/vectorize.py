@@ -2,6 +2,7 @@
 Config: lowercase; word 1-2 grams; char 3-4 grams within each word (prefixed
 '#' and boundary-padded with '^'/'$'); FNV-1a 32-bit -> index & (DIMS-1);
 sign from the top bit; L2-normalized term vector."""
+
 import math
 import re
 from typing import Dict, Iterator, List

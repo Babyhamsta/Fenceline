@@ -11,6 +11,7 @@ hostile page can stall the run. Records are byte-identical to the single-shot
 
 Env knobs: ``SCRAPE_WORKERS`` (default 16), ``SCRAPE_TIMEOUT_MS`` (default
 15000), ``SCRAPE_TARGET`` (override per-class usable target)."""
+
 import asyncio
 import json
 import os
@@ -21,9 +22,15 @@ from playwright.async_api import async_playwright
 
 from classifier.extract import build_record
 from classifier.filtering import is_usable
-from classifier.frontier import (attempted_path, build_pools, kept_by_label,
-                                  kept_domains, load_attempted, load_ranks,
-                                  remaining)
+from classifier.frontier import (
+    attempted_path,
+    build_pools,
+    kept_by_label,
+    kept_domains,
+    load_attempted,
+    load_ranks,
+    remaining,
+)
 from classifier.render import open_context, render_on_context
 
 ROOT = Path(__file__).resolve().parent
@@ -66,8 +73,11 @@ async def _worker(p, label, work, raw_fh, att_fh, state) -> None:
             a = state["attempts"]
             if a % 100 == 0:
                 rate = a / max(1e-9, time.perf_counter() - state["t0"])
-                print(f"  [{label}] {state['kept']}/{state['target']} usable  "
-                      f"({a} tried, {rate:.1f}/s)", flush=True)
+                print(
+                    f"  [{label}] {state['kept']}/{state['target']} usable  "
+                    f"({a} tried, {rate:.1f}/s)",
+                    flush=True,
+                )
             served += 1
             if served % RECYCLE_EVERY == 0:
                 try:
@@ -93,8 +103,9 @@ async def _amain() -> None:
     popular_first = tuple(CFG.get("popular_first", []))
     denylist = tuple(CFG.get("denylist", []))
     ranks = load_ranks(ROOT / CFG["paths"]["tranco"]) if popular_first else {}
-    pools = build_pools(tsv, labels, seed=0, denylist=denylist,
-                        popular_first=popular_first, ranks=ranks)
+    pools = build_pools(
+        tsv, labels, seed=0, denylist=denylist, popular_first=popular_first, ranks=ranks
+    )
     kept = kept_by_label(raw_path)
     kept_doms = kept_domains(raw_path)
 
@@ -106,8 +117,7 @@ async def _amain() -> None:
             continue
         attempted = load_attempted(state_dir, label)
         rem = remaining(pools[label], attempted, kept_doms)
-        print(f"[{label}] {have}/{TARGET} usable, pool_remaining={len(rem)}",
-              flush=True)
+        print(f"[{label}] {have}/{TARGET} usable, pool_remaining={len(rem)}", flush=True)
         if not rem:
             print(f"[{label}] pool exhausted — leaving short at {have}", flush=True)
             continue
@@ -115,17 +125,21 @@ async def _amain() -> None:
         work: asyncio.Queue = asyncio.Queue()
         for d in rem:
             work.put_nowait(d)
-        state = {"kept": have, "target": TARGET, "attempts": 0,
-                 "t0": time.perf_counter()}
-        with raw_path.open("a", encoding="utf-8") as raw_fh, \
-                attempted_path(state_dir, label).open("a", encoding="utf-8") as att_fh:
+        state = {"kept": have, "target": TARGET, "attempts": 0, "t0": time.perf_counter()}
+        with (
+            raw_path.open("a", encoding="utf-8") as raw_fh,
+            attempted_path(state_dir, label).open("a", encoding="utf-8") as att_fh,
+        ):
             async with async_playwright() as p:
-                await asyncio.gather(*[
-                    _worker(p, label, work, raw_fh, att_fh, state)
-                    for _ in range(WORKERS)])
+                await asyncio.gather(
+                    *[_worker(p, label, work, raw_fh, att_fh, state) for _ in range(WORKERS)]
+                )
         outcome = "met" if state["kept"] >= TARGET else "short (pool drained)"
-        print(f"[{label}] -> {state['kept']}/{TARGET} usable, "
-              f"{state['attempts']} tried this run [{outcome}]", flush=True)
+        print(
+            f"[{label}] -> {state['kept']}/{TARGET} usable, "
+            f"{state['attempts']} tried this run [{outcome}]",
+            flush=True,
+        )
 
     print(f"done. corpus -> {raw_path}", flush=True)
 

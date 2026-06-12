@@ -67,7 +67,10 @@ export async function getStoredModelVersion() {
 async function loadBundled() {
   try {
     const base = chrome.runtime.getURL("model/");
-    const [binRes, metaRes] = await Promise.all([fetch(base + "model.bin"), fetch(base + "model-meta.json")]);
+    const [binRes, metaRes] = await Promise.all([
+      fetch(base + "model.bin"),
+      fetch(base + "model-meta.json")
+    ]);
     if (!binRes.ok || !metaRes.ok) return false;
     COEF = new Float32Array(await binRes.arrayBuffer());
     META = await metaRes.json();
@@ -130,7 +133,7 @@ function* charNgrams(word) {
 }
 
 function tokens(text) {
-  const words = (text.toLowerCase().match(/[a-z0-9]+/g)) || [];
+  const words = text.toLowerCase().match(/[a-z0-9]+/g) || [];
   const out = [];
   for (let i = 0; i < words.length; i++) {
     out.push(words[i]);

@@ -58,8 +58,14 @@ export async function getConfig() {
   }
   // Normalize
   cfg.listBaseUrl = String(cfg.listBaseUrl).replace(/\/+$/, "");
-  cfg.allowDomains = (cfg.allowDomains || []).map((d) => String(d).toLowerCase().trim()).filter(Boolean);
-  cfg.extraBlockDomains = (cfg.extraBlockDomains || []).map((d) => String(d).toLowerCase().trim()).filter(Boolean);
-  cfg.extraNoPinHosts = (cfg.extraNoPinHosts || []).map((d) => String(d).toLowerCase().trim()).filter(Boolean);
+  cfg.allowDomains = (cfg.allowDomains || [])
+    .map((d) => String(d).toLowerCase().trim())
+    .filter(Boolean);
+  cfg.extraBlockDomains = (cfg.extraBlockDomains || [])
+    .map((d) => String(d).toLowerCase().trim())
+    .filter(Boolean);
+  cfg.extraNoPinHosts = (cfg.extraNoPinHosts || [])
+    .map((d) => String(d).toLowerCase().trim())
+    .filter(Boolean);
   return cfg;
 }

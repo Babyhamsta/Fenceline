@@ -52,9 +52,7 @@ function resourceTypes(cfg) {
 export async function applyPolicyRules() {
   const cfg = await getConfig();
   const existing = await chrome.declarativeNetRequest.getDynamicRules();
-  const oldIds = existing
-    .filter((r) => r.id >= ALLOW_ID_BASE)
-    .map((r) => r.id);
+  const oldIds = existing.filter((r) => r.id >= ALLOW_ID_BASE).map((r) => r.id);
 
   const addRules = [];
   cfg.allowDomains.slice(0, MAX_POLICY_RULES).forEach((d, i) => {
@@ -116,7 +114,8 @@ async function prepareDnrChunks(meta, cfg, storedChunkHashes) {
   const staleIds = [];
   for (const [file, info] of Object.entries(storedChunkHashes)) {
     if (!liveFiles.has(file) && info && info.ruleIdStart !== undefined) {
-      for (let id = info.ruleIdStart; id < info.ruleIdStart + info.maxRules; id++) staleIds.push(id);
+      for (let id = info.ruleIdStart; id < info.ruleIdStart + info.maxRules; id++)
+        staleIds.push(id);
     }
   }
 

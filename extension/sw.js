@@ -128,7 +128,14 @@ async function forceReplaceTab(tabId, url) {
 
 // source: "list" (DNR/tail), "model" (content classifier), "proxy",
 // "district-policy". confidence (0..1) is set only for model blocks.
-async function blockTab(tabId, domain, category, source = "list", confidence = null, force = false) {
+async function blockTab(
+  tabId,
+  domain,
+  category,
+  source = "list",
+  confidence = null,
+  force = false
+) {
   if (tabId == null || tabId < 0) return;
   if (markAndShouldLog(tabId, domain)) recordBlock(domain, category, source);
   let url =
@@ -269,7 +276,8 @@ async function blockProxyHost(host, tabId, pin = true) {
   } else {
     // Request came from the proxy's service worker (no tab) — replace whatever
     // tab is sitting on that host.
-    for (const [tid, h] of lastRealHost) if (h === host) blockTab(tid, host, "proxy-bypass", "proxy", null, true);
+    for (const [tid, h] of lastRealHost)
+      if (h === host) blockTab(tid, host, "proxy-bypass", "proxy", null, true);
   }
   return true;
 }

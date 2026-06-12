@@ -1,5 +1,6 @@
 """Split records into train/val/test by registrable domain, so every record
 sharing an eTLD+1 lands in exactly one split. Deterministic given a seed."""
+
 import random
 from typing import Dict, List, Tuple
 
@@ -16,8 +17,7 @@ def split_by_etld1(
     n = len(domains)
     n_train = int(n * ratios[0])
     n_val = int(n * ratios[1])
-    buckets = (domains[:n_train], domains[n_train : n_train + n_val],
-               domains[n_train + n_val :])
+    buckets = (domains[:n_train], domains[n_train : n_train + n_val], domains[n_train + n_val :])
     out: List[List[Dict]] = []
     for bucket in buckets:
         rows: List[Dict] = []
