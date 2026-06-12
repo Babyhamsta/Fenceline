@@ -99,17 +99,47 @@ async function blockTab(tabId, domain, category, source = "list", confidence = n
 let pinned = null; // Map<registrableDomain, {category, confidence}>
 const PIN_CAP = 2000;
 
-// Hosts that serve many independent sites under one hostname (path-multitenant).
-// We still block the specific page, but never pin the bare host — pinning
-// sites.google.com would block ALL Google Sites fleet-wide. These get re-scanned
-// on each visit instead.
+// Hosts that render MANY independent sites' content under one origin
+// (path-multitenant). We still block the specific harmful page (content scan
+// re-runs every visit), but never PIN the bare host — pinning would over-block
+// the whole service: pinning sites.google.com kills all Google Sites; pinning
+// web.archive.org kills the Wayback Machine for legit research. A blocked game
+// reached *via* archive.org/translate is still blocked on that visit; the
+// origin stays usable. Suffix-matched, so subdomains are covered.
 const NO_PIN_HOSTS = new Set([
+  // Google path-multitenant hosts.
   "sites.google.com",
   "script.google.com",
   "storage.googleapis.com",
   "docs.google.com",
-  "drive.google.com"
+  "drive.google.com",
+  "translate.google.com",
+  "webcache.googleusercontent.com",
+  // Archival / cache / reader services — they serve other sites' content.
+  "archive.org",
+  "archive.ph",
+  "archive.today",
+  "archive.is",
+  "archive.li",
+  "archive.vn",
+  "archive.fo",
+  "cachedview.nl",
+  "r.jina.ai",
+  "12ft.io",
+  // Public code CDNs — anyone can host a file/app here.
+  "jsdelivr.net",
+  "githack.com",
+  "statically.io",
+  "raw.githubusercontent.com",
+  "gitcdn.link",
+  "gitcdn.xyz"
 ]);
+
+function isNoPinHost(host) {
+  const h = host.toLowerCase();
+  for (const d of NO_PIN_HOSTS) if (h === d || h.endsWith("." + d)) return true;
+  return false;
+}
 
 async function loadPins() {
   if (pinned) return pinned;
@@ -119,7 +149,7 @@ async function loadPins() {
 }
 
 async function pinDomain(domain, category, confidence) {
-  if (NO_PIN_HOSTS.has(domain)) return; // block the page, but don't over-block the host
+  if (isNoPinHost(domain)) return; // block the page, but don't over-block the host
   const p = await loadPins();
   if (p.has(domain)) return;
   p.set(domain, { category, confidence });
