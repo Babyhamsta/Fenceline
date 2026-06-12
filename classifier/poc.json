@@ -1,0 +1,33 @@
+{
+  "categories": ["adult", "games", "gambling", "proxy-bypass"],
+  "clean_label": "clean",
+  "per_class_target": 5000,
+  "dims": 65536,
+  "block_threshold": 0.9,
+  "popular_first": ["adult"],
+  "denylist": [
+    "blogspot",
+    "taboola", "rubiconproject", "pubmatic", "vungle", "scorecardresearch",
+    "inmobi", "appsflyer", "media.net", "amplitude", "hotjar", "outbrain",
+    "stackadapt", "agkn", "360yield", "branch.io", "addtoany", "b-cdn.net",
+    "afternic", "adnxs", "criteo", "casalemedia", "adsrvr", "smartadserver",
+    "openx", "indexww", "3lift", "bidswitch", "sharethrough", "teads",
+    "yieldmo", "gumgum", "adform", "quantserve", "moatads", "doubleverify",
+    "adcolony", "mixpanel", "tapad", "qualtrics", "flashtalking", "tsyndicate",
+    "alphonso", "hath.network",
+    "vk.com", "ok.ru", "163.com", "deviantart", "mediafire", "freepik",
+    "character.ai", "pixiv", "archiveofourown", "furaffinity", "rutube",
+    "dmm.co.jp", "fc2.com"
+  ],
+  "paths": {
+    "domains_tsv": "../dist/domains.tsv",
+    "tranco": "../data/tranco.csv",
+    "raw": "data/raw.jsonl",
+    "state_dir": "data/attempted",
+    "train": "data/train.jsonl",
+    "val": "data/val.jsonl",
+    "test": "data/test.jsonl",
+    "model": "data/model.npz",
+    "dist": "dist"
+  }
+}

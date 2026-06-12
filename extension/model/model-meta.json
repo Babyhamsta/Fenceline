@@ -1,0 +1,21 @@
+{
+  "version": "97d7b03f7e7c27c5",
+  "vectorizer": "fnv-hash-v1",
+  "dims": 65536,
+  "classes": [
+    "adult",
+    "clean",
+    "gambling",
+    "games",
+    "proxy-bypass"
+  ],
+  "intercept": [
+    -0.3857666552066803,
+    0.43954432010650635,
+    -0.14442932605743408,
+    -0.21594326198101044,
+    0.3065949082374573
+  ],
+  "clean_label": "clean",
+  "block_threshold": 0.9
+}

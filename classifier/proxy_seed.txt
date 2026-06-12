@@ -1,0 +1,54 @@
+# Curated web-proxy ("enter a URL to unblock") sites — the iframe/URL-entry
+# circumvention type students actually use on managed Chromebooks. Scraped and
+# force-labeled proxy-bypass regardless of how the upstream blocklists category
+# them (many sit under `adult` by precedence). One bare domain per line.
+#
+# Sources: user-provided seeds + well-known web proxies from public roundups.
+# Web proxies are ephemeral; this is a quality anchor for the page signature,
+# not an exhaustive list — the content classifier generalizes to new ones.
+
+# user-provided seeds
+coproxy.io
+proxyorb.com
+proxypal.net
+wproxy.net
+
+# canonical web proxies
+kproxy.com
+croxyproxy.com
+croxyproxy.rocks
+hide.me
+hidester.com
+proxysite.com
+4everproxy.com
+hideoxy.com
+megaproxy.com
+whoer.net
+proxfree.com
+filterbypass.me
+proxium.io
+proxyium.com
+blockaway.net
+plainproxies.com
+croxy.network
+vpnbook.com
+genmirror.com
+unblockweb.me
+freeproxy.win
+zalmos.com
+boomproxy.com
+dontfilter.us
+defilter.us
+weboxy.com
+croxy.org
+unblockit.boats
+noblocc.com
+useawp.net
+awp.today
+proxysite.cloud
+sitenable.com
+sitenable.co
+hidemy.name
+freeproxy.io
+proxynova.com
+unblockvideos.com

@@ -123,7 +123,49 @@ function sha256(buf) {
   return createHash("sha256").update(buf).digest("hex");
 }
 
+// Emit dist/domains.tsv ("<domain>\t<label>") for the content classifier.
+// Reuses the same fetch/normalize path as the build so labels are consistent.
+// "clean" = Tranco-ranked domains that are NOT in any blocked category.
+async function dumpDomains() {
+  const domainCat = new Map();
+  for (let ci = 0; ci < SRC.categories.length; ci++) {
+    const cat = SRC.categories[ci];
+    for (const src of cat.sources) {
+      const { buf } = await fetchSource(src);
+      if (!buf) continue;
+      const found = [];
+      if (src.format === "ut1") parseUt1TarGz(buf, found);
+      else parsePlain(buf.toString("utf8"), found);
+      for (const d of found) if (!domainCat.has(d)) domainCat.set(d, cat.name);
+    }
+  }
+  const lines = [];
+  for (const [d, label] of domainCat) lines.push(`${d}\t${label}`);
+  const ranks = loadTrancoRanks();
+  if (ranks) {
+    let cleanCount = 0;
+    for (const d of ranks.keys()) {
+      if (cleanCount >= 50000) break;
+      // Normalize the Tranco domain the same way blocked domains were, so a
+      // blocked www./IDN/trailing-dot form isn't mislabeled "clean".
+      const nd = normalizeDomain(d);
+      if (nd && !domainCat.has(nd)) {
+        lines.push(`${nd}\tclean`);
+        cleanCount++;
+      }
+    }
+  }
+  mkdirSync(DIST, { recursive: true });
+  writeFileSync(join(DIST, "domains.tsv"), lines.join("\n") + "\n");
+  console.log(`Wrote dist/domains.tsv: ${lines.length.toLocaleString()} rows`);
+}
+
 async function main() {
+  if (process.argv.includes("--dump-domains")) {
+    await dumpDomains();
+    return;
+  }
+
   console.log("Fenceline compiler\n");
 
   // 1) Collect: domain -> category index (first category wins).
@@ -304,6 +346,26 @@ async function main() {
     tail: { file: "tail.bin", sha256: sha256(tailBuf), count: entries.length },
     cats: { file: "cats.bin", sha256: sha256(catsBuf) }
   };
+
+  // Optional Tier-3 content model. If the classifier has exported one, publish
+  // it next to the lists and reference it (with its OWN version) so the
+  // extension pulls the ~1.3 MB weights only when the model itself changes —
+  // independent of the list version.
+  const modelSrc = join(ROOT, "classifier", "dist");
+  if (existsSync(join(modelSrc, "model.bin")) && existsSync(join(modelSrc, "model-meta.json"))) {
+    const modelBin = readFileSync(join(modelSrc, "model.bin"));
+    const modelMetaRaw = readFileSync(join(modelSrc, "model-meta.json"));
+    writeFileSync(join(DIST, "model.bin"), modelBin);
+    writeFileSync(join(DIST, "model-meta.json"), modelMetaRaw);
+    meta.model = {
+      file: "model.bin",
+      metaFile: "model-meta.json",
+      version: JSON.parse(modelMetaRaw.toString("utf8")).version,
+      sha256: sha256(modelBin)
+    };
+    console.log(`  model.bin ${(modelBin.length / 1048576).toFixed(2)} MB (v${meta.model.version})`);
+  }
+
   writeFileSync(join(DIST, "meta.json"), JSON.stringify(meta, null, 2));
   // Keep GitHub Pages from running Jekyll on the dist branch.
   writeFileSync(join(DIST, ".nojekyll"), "");

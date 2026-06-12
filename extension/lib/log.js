@@ -2,9 +2,10 @@
 // Stored per-device in chrome.storage.local:
 //   stats.total                lifetime block count
 //   stats.byCategory[cat]      lifetime count per category
+//   stats.bySource[source]     lifetime count per block source (list/model/…)
 //   stats.byDomain[domain]     lifetime count per domain (capped)
 //   stats.byDay[YYYY-MM-DD]    { category: count } per day
-//   events                     ring buffer of recent blocks [{t, d, c}]
+//   events                     ring buffer of recent blocks [{t, d, c, s}]
 //
 // Students can't tamper with this on a managed device: extension storage
 // is only writable by the extension, DevTools on force-installed
@@ -21,10 +22,9 @@ let flushTimer = null;
 async function load() {
   if (pending) return pending;
   const st = await chrome.storage.local.get(["stats", "events"]);
-  pending = {
-    stats: st.stats || { total: 0, byCategory: {}, byDomain: {}, byDay: {} },
-    events: st.events || []
-  };
+  const stats = st.stats || { total: 0, byCategory: {}, byDomain: {}, byDay: {} };
+  if (!stats.bySource) stats.bySource = {}; // back-fill for pre-Tier-3 stores
+  pending = { stats, events: st.events || [] };
   return pending;
 }
 
@@ -37,12 +37,13 @@ function scheduleFlush() {
   }, 250); // short: MV3 SWs can be suspended; keep the loss window tiny
 }
 
-export async function recordBlock(domain, category) {
+export async function recordBlock(domain, category, source = "list") {
   const data = await load();
   const s = data.stats;
 
   s.total++;
   s.byCategory[category] = (s.byCategory[category] || 0) + 1;
+  s.bySource[source] = (s.bySource[source] || 0) + 1;
 
   if (s.byDomain[domain] !== undefined || Object.keys(s.byDomain).length < DOMAIN_CAP) {
     s.byDomain[domain] = (s.byDomain[domain] || 0) + 1;
@@ -58,7 +59,7 @@ export async function recordBlock(domain, category) {
   }
   s.byDay[day][category] = (s.byDay[day][category] || 0) + 1;
 
-  data.events.push({ t: Date.now(), d: domain, c: category });
+  data.events.push({ t: Date.now(), d: domain, c: category, s: source });
   if (data.events.length > EVENT_CAP) data.events.splice(0, data.events.length - EVENT_CAP);
 
   scheduleFlush();
