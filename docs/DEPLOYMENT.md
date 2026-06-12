@@ -80,6 +80,14 @@ select the **student OU** →
    branding, and whether the report page's Clear/Export buttons work. Students
    cannot read or modify managed policy.
 
+**`extraNoPinHosts`** extends the block-the-page-never-pin-the-origin baseline.
+Fenceline ships a synced baseline of shared/path-multitenant hosts (Google Sites,
+archive.org, public CDNs…) that are blocked per harmful page but never *pinned*,
+so a single bad page can't over-block the whole service for everyone. Add your
+own shared hosts here — e.g. an internal archive or CDN your district runs — when
+a blocked page on them should not take the origin down. It never allowlists a
+host; use `allowDomains` for that.
+
 ## 5. Hardening checklist (this is most of the actual security)
 
 The extension only filters Chrome on the profile it's installed in. Close the

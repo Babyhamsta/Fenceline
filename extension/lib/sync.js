@@ -183,6 +183,12 @@ export async function checkAndSync(force = false) {
   }
   await chrome.storage.local.set({ lastCheck: Date.now() });
 
+  // No-pin baseline rides meta.json (tiny, fetched every check) so the fleet
+  // picks up additions without a full artifact re-download or release cycle.
+  if (Array.isArray(meta.noPinHosts)) {
+    await chrome.storage.local.set({ noPinHosts: meta.noPinHosts });
+  }
+
   // Model first (cheap, version-gated) so it tracks even an up-to-date list.
   try {
     const mv = await syncModel(cfg, meta);

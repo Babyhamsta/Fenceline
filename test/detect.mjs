@@ -9,7 +9,7 @@
 import { looksLikeProxyUrl, _decodesToUrl } from "../extension/lib/detect/proxy-url.js";
 import { detectGlyphCipher } from "../extension/lib/detect/glyph-cipher.js";
 import { svgHasForeignObject, svgHasExecutableContent } from "../extension/lib/detect/svg-app.js";
-import { isNoPinHost, pinnedHit, capPins, createPinStore, PIN_CAP } from "../extension/lib/pins.js";
+import { isNoPinHost, pinnedHit, capPins, createPinStore, buildNoPinHosts, NO_PIN_HOSTS, PIN_CAP } from "../extension/lib/pins.js";
 
 let failures = 0;
 function ok(cond, msg) {
@@ -174,6 +174,31 @@ section("lib/pins");
   for (let i = 0; i < PIN_CAP + 5; i++) await store2.pin(`d${i}.com`, "games", 1);
   ok(Object.keys(fs2.current()).length === PIN_CAP, "store enforces PIN_CAP");
   ok(!("d0.com" in fs2.current()) && `d${PIN_CAP + 4}.com` in fs2.current(), "store evicts oldest, keeps newest");
+
+  // The store consults its no-pin getter live (P2.2 dynamic set).
+  const fs3 = fakeStorage();
+  const store3 = createPinStore(fs3, () => new Set(["internal.example"]));
+  await store3.pin("internal.example", "games", 1);
+  ok(!("internal.example" in fs3.current()), "store honors injected no-pin getter");
+  await store3.pin("sites.google.com", "games", 1);
+  ok("sites.google.com" in fs3.current(), "injected getter replaces the bundled set");
+}
+
+// ---- pins: buildNoPinHosts (P2.2 baseline + extras merge) -------------
+section("lib/pins buildNoPinHosts");
+{
+  const fallback = buildNoPinHosts(undefined, []);
+  ok(isNoPinHost("archive.org", fallback), "no synced baseline → bundled fallback");
+  ok(fallback.size === NO_PIN_HOSTS.size, "fallback equals bundled set size");
+
+  const merged = buildNoPinHosts(["foo.example"], ["bar.example"]);
+  ok(merged.has("foo.example") && merged.has("bar.example"), "synced baseline ∪ extras");
+  ok(!merged.has("archive.org"), "non-empty synced baseline replaces the bundled set");
+
+  const emptyBaseline = buildNoPinHosts([], ["bar.example"]);
+  ok(isNoPinHost("archive.org", emptyBaseline) && emptyBaseline.has("bar.example"), "empty baseline falls back, extras still merged");
+
+  ok(buildNoPinHosts(["UPPER.example"]).has("upper.example"), "entries lowercased");
 }
 
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);

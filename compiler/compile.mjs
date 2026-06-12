@@ -30,6 +30,19 @@ const SRC = JSON.parse(readFileSync(join(ROOT, "compiler", "sources.json"), "utf
 const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/;
 const IP_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
 
+// The block-the-page-never-pin-the-origin baseline, shipped in meta.json.
+// One host per line; blank lines and # comments ignored.
+function readNoPinHosts() {
+  const path = join(ROOT, "compiler", "no-pin-hosts.txt");
+  if (!existsSync(path)) return [];
+  const out = [];
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    const h = line.replace(/#.*$/, "").trim().toLowerCase();
+    if (h) out.push(h);
+  }
+  return out;
+}
+
 function normalizeDomain(raw) {
   let d = raw.trim().toLowerCase();
   if (!d || d.startsWith("#") || d.startsWith("!")) return null;
@@ -344,7 +357,11 @@ async function main() {
     counts: { total: domainCat.size, dnrTier: dnrPlaced, rules: totalRules },
     chunks,
     tail: { file: "tail.bin", sha256: sha256(tailBuf), count: entries.length },
-    cats: { file: "cats.bin", sha256: sha256(catsBuf) }
+    cats: { file: "cats.bin", sha256: sha256(catsBuf) },
+    // Block-the-page-never-pin-the-origin hosts (compiler/no-pin-hosts.txt),
+    // synced so the fleet picks up additions in days, not a release cycle. The
+    // extension keeps a bundled copy of this same baseline as a pre-sync fallback.
+    noPinHosts: readNoPinHosts()
   };
 
   // Optional Tier-3 content model. If the classifier has exported one, publish

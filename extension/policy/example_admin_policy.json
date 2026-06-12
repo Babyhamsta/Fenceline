@@ -5,6 +5,7 @@
   "blockSubframes": { "Value": true },
   "allowDomains": { "Value": ["scholastic.com", "khanacademy.org"] },
   "extraBlockDomains": { "Value": ["coolmathgames.com"] },
+  "extraNoPinHosts": { "Value": ["archive.example.org"] },
   "allowClearLogs": { "Value": false },
   "allowExport": { "Value": true },
   "schoolName": { "Value": "Example School District" },

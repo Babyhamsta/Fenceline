@@ -21,7 +21,7 @@ import { ensureModelLoaded, isModelReady, modelVersion, decide } from "./lib/mod
 import { looksLikeProxyUrl } from "./lib/detect/proxy-url.js";
 import { detectGlyphCipher } from "./lib/detect/glyph-cipher.js";
 import { svgHasForeignObject, svgHasExecutableContent } from "./lib/detect/svg-app.js";
-import { createPinStore, pinnedHit } from "./lib/pins.js";
+import { createPinStore, pinnedHit, buildNoPinHosts, NO_PIN_HOSTS } from "./lib/pins.js";
 
 // The detection heuristics (proxy-url, glyph-cipher, svg-app) and the pin store
 // live in ./lib — extracted from this file and unit-tested in test/detect.mjs.
@@ -149,9 +149,25 @@ async function blockTab(tabId, domain, category, source = "list", confidence = n
 
 // Domains the model/proxy tiers have blocked before are pinned locally (see
 // ./lib/pins.js) so a re-visit is blocked at navigation time — no second-load
-// flash, no re-scan. The store also owns the NO_PIN_HOSTS suffix set (shared
-// path-multitenant hosts we block-but-never-pin) and the FIFO cap.
-const pins = createPinStore(chrome.storage.local);
+// flash, no re-scan. The store consults the effective no-pin set (shared
+// path-multitenant hosts we block-but-never-pin) on every pin.
+//
+// The no-pin set is data, not code: a baseline synced in meta.json (compiler/
+// no-pin-hosts.txt), district extras from the extraNoPinHosts policy key, and
+// the bundled NO_PIN_HOSTS as the pre-first-sync fallback. Cached here and
+// recomputed by refreshNoPinHosts on startup, sync, and policy change.
+let effectiveNoPinHosts = NO_PIN_HOSTS;
+async function refreshNoPinHosts() {
+  try {
+    const { noPinHosts } = await chrome.storage.local.get(["noPinHosts"]);
+    const cfg = await getConfig();
+    effectiveNoPinHosts = buildNoPinHosts(noPinHosts, cfg.extraNoPinHosts);
+  } catch (e) {
+    // Keep whatever set we already have (bundled fallback at minimum).
+  }
+}
+const pins = createPinStore(chrome.storage.local, () => effectiveNoPinHosts);
+refreshNoPinHosts(); // reload synced baseline + extras on every SW spin-up (incl. restarts)
 
 function hostnameOf(url) {
   try {
@@ -345,6 +361,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name !== SYNC_ALARM) return;
   try {
     await checkAndSync(false);
+    await refreshNoPinHosts(); // meta.json may carry an updated no-pin baseline
   } catch (e) {
     console.error("[fenceline] sync failed", e);
   }
@@ -357,6 +374,7 @@ chrome.runtime.onInstalled.addListener(async () => {
     const loaded = await ensureLoaded();
     await checkAndSync(!loaded);
     await ensureModelLoaded();
+    await refreshNoPinHosts();
   } catch (e) {
     console.error("[fenceline] initial sync failed", e);
   }
@@ -366,6 +384,7 @@ chrome.runtime.onStartup.addListener(async () => {
   await scheduleSync();
   ensureLoaded();
   ensureModelLoaded();
+  refreshNoPinHosts();
 });
 
 // Admin pushed new policy (allow/deny lists, settings) — apply live.
@@ -373,6 +392,7 @@ chrome.storage.managed.onChanged.addListener(async () => {
   try {
     await applyPolicyRules();
     await scheduleSync();
+    await refreshNoPinHosts(); // extraNoPinHosts may have changed
   } catch (e) {
     console.error("[fenceline] policy apply failed", e);
   }

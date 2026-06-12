@@ -47,6 +47,20 @@ export function isNoPinHost(host, noPinHosts = NO_PIN_HOSTS) {
   return false;
 }
 
+// Effective no-pin set = synced baseline (or the bundled NO_PIN_HOSTS fallback
+// when nothing has synced yet) ∪ district extras (extraNoPinHosts policy key).
+// Block-the-page-never-pin semantics only — this never allows a host.
+export function buildNoPinHosts(syncedBaseline, extras = []) {
+  const base = Array.isArray(syncedBaseline) && syncedBaseline.length ? syncedBaseline : NO_PIN_HOSTS;
+  const out = new Set();
+  for (const h of base) out.add(String(h).toLowerCase());
+  for (const h of extras) {
+    const v = String(h).toLowerCase().trim();
+    if (v) out.add(v);
+  }
+  return out;
+}
+
 export function pinnedHit(hostname, p) {
   const parts = hostname.toLowerCase().split(".");
   for (let i = 0; i < parts.length - 1; i++) {
@@ -62,10 +76,11 @@ export function capPins(p, cap = PIN_CAP) {
   while (p.size > cap) p.delete(p.keys().next().value);
 }
 
-// storage: a chrome.storage area ({ get(keys), set(obj) }). noPinHosts lets the
-// caller inject a live set (baseline + district extras) once P2.2 lands; it
-// defaults to the bundled NO_PIN_HOSTS.
-export function createPinStore(storage, noPinHosts = NO_PIN_HOSTS) {
+// storage: a chrome.storage area ({ get(keys), set(obj) }). getNoPinHosts is a
+// sync getter returning the live effective set (synced baseline + district
+// extras), re-evaluated on each pin so a freshly-synced list or policy change
+// takes effect without rebuilding the store; it defaults to the bundled set.
+export function createPinStore(storage, getNoPinHosts = () => NO_PIN_HOSTS) {
   let pinned = null; // Map<registrableDomain, {category, confidence}>
 
   async function load() {
@@ -76,7 +91,7 @@ export function createPinStore(storage, noPinHosts = NO_PIN_HOSTS) {
   }
 
   async function pin(domain, category, confidence) {
-    if (isNoPinHost(domain, noPinHosts)) return; // block the page, but don't over-block the host
+    if (isNoPinHost(domain, getNoPinHosts())) return; // block the page, but don't over-block the host
     const p = await load();
     if (p.has(domain)) return;
     p.set(domain, { category, confidence });
