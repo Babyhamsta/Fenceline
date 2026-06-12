@@ -20,21 +20,24 @@ The filter lives on the device and enforces on every network — school, home, h
 
 ---
 
-Fenceline is a content filter you actually own. A nightly GitHub Action compiles
-free categorized blocklists into static files; a Manifest V3 extension —
-force-installed through your admin console — syncs them and matches every
-navigation **on the device**. Nothing is proxied, nothing is logged off-box, and
+Fenceline is a content filter you actually own. A GitHub Action compiles free
+categorized blocklists into static files every couple of days; a Manifest V3
+extension — force-installed through your admin console — syncs them and matches
+every navigation **on the device**. Nothing is proxied, nothing is logged off-box, and
 there is no recurring cost. It runs on managed Chromebooks (the strongest story —
 Chrome *is* the device) and equally on managed Chrome for Windows, macOS, and
 Linux via Chrome Browser Cloud Management or OS policy.
 
-- **Blocklists** are compiled daily from free categorized sources (UT1, HaGeZi,
-  hosts-format lists, your own) and published as static files on GitHub Pages.
-  "Updating the filter" = the Action committing new artifacts; forcing a change =
-  editing `lists/block.txt` / `lists/allow.txt` and pushing.
-- **The extension** is force-installed via managed policy on the student OU,
-  syncs on an ETag-friendly version check, and matches every navigation
-  on-device — ~6 µs per check at 2M domains in benchmarks.
+- **Blocklists** are compiled every two days by a GitHub Action from free
+  categorized sources (UT1, HaGeZi, hosts-format lists, your own) and published
+  as static files on GitHub Pages. "Updating the filter" = the Action committing
+  new artifacts; forcing a change = editing `lists/block.txt` / `lists/allow.txt`
+  and pushing.
+- **The extension** is force-installed via managed policy on the student OU and
+  matches every navigation on-device — ~6 µs per check at 2M domains in
+  benchmarks. It polls a tiny version file every 12 hours (ETag/304, ~1 KB) and
+  downloads the full list at most once every 7 days, so fleet bandwidth stays
+  trivial.
 - **Logging** records *blocked attempts only* — domain, category, timestamp,
   and which layer blocked it. No browsing history, nothing leaves the device.
   The report page shows lifetime counts by category/domain/day and exports
@@ -67,7 +70,7 @@ blocked automatically in both tiers.
 ### The list pipeline
 
 ```
-GitHub Action (nightly)                       Managed Chrome
+GitHub Action (every 2 days)                  Managed Chrome
 ┌─────────────────────────┐   GitHub Pages   ┌──────────────────────────────┐
 │ compiler/compile.mjs    │   (static, CDN)  │ MV3 extension (force-install)│
 │  pull UT1 / HaGeZi /…    ├──► meta.json ────► version check (12h, ~1 KB)   │
@@ -154,7 +157,7 @@ extension/          the MV3 extension (load unpacked to dev-test)
 compiler/           list compiler + sources.json (categories, tier sizing)
 classifier/         scraper, training/eval, model export (Python + JS parity)
 lists/              allow.txt / block.txt district overrides
-.github/workflows/  nightly build + publish to gh-pages
+.github/workflows/  build + publish to gh-pages (every 2 days)
 test/selftest.mjs   end-to-end: compile fixtures, run the real engine logic
 docs/               DEPLOYMENT.md (admin console, hardening), CUSTOMIZING.md
 ```
