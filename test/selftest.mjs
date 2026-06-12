@@ -8,7 +8,7 @@
 // Run: node test/selftest.mjs
 
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { fnv1a64, domainCandidates, lookupHash } from "../extension/lib/hash.js";
