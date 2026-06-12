@@ -12,6 +12,7 @@ const conf = params.get("conf"); // present only for model blocks (0-100)
 const SOURCE_LABEL = {
   list: "URL filter (known blocked site)",
   model: "Content model (page contents)",
+  proxy: "Web-proxy detector (circumvention tool)",
   "district-policy": "District policy"
 };
 

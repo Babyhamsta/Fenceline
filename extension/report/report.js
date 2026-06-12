@@ -15,6 +15,7 @@ function esc(s) {
 const SRC_LABEL = {
   list: "URL filter",
   model: "Content model",
+  proxy: "Web-proxy detector",
   "district-policy": "District policy"
 };
 const srcLabel = (s) => SRC_LABEL[s] || s || "URL filter";

@@ -117,6 +117,35 @@ function hostnameOf(url) {
   }
 }
 
+// Tier 4: web-proxy ENGINE signature — detected by BEHAVIOUR, not a list of
+// framework names (which would both miss new proxies and false-trip legit sites
+// like an epoxy or UV-service company). Every web proxy loads its target by
+// embedding the target URL in the PATH, e.g.
+//   cherrion.top/scramjet/https%3A%2F%2Fgamesito.com/...   (percent-encoded)
+//   someproxy.net/service/aHR0cHM6Ly9nYW1lc2l0by5jb20...   (base64, Ultraviolet)
+// Legit sites only ever pass a target URL as a ?query param, never as a path
+// segment — so a URL-in-the-path is a near-zero-FP, framework-agnostic tell.
+function _decodesToUrl(seg) {
+  if (seg.length < 24 || !/^[A-Za-z0-9+/=_-]+$/.test(seg)) return false;
+  try {
+    return /^https?:\/\//i.test(atob(seg.replace(/-/g, "+").replace(/_/g, "/")));
+  } catch {
+    return false;
+  }
+}
+function looksLikeProxyUrl(url) {
+  try {
+    const rawPath = new URL(url).pathname;
+    const path = rawPath.toLowerCase();
+    if (path.includes("https%3a%2f%2f") || path.includes("http%3a%2f%2f")) return true; // percent-encoded
+    if (path.includes("/https:/") || path.includes("/http:/")) return true;             // plain
+    for (const seg of rawPath.split("/")) if (_decodesToUrl(seg)) return true;           // base64
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 function isAllowed(hostname, cfg) {
   const h = hostname.toLowerCase();
   return cfg.allowDomains.some((d) => h === d || h.endsWith("." + d));
@@ -130,6 +159,20 @@ function extraBlocked(hostname, cfg) {
 // ---- Tier 2: tail check on navigation ---------------------------------
 
 chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
+  // Tier 4 runs on EVERY frame: a proxy-engine URL anywhere in the tab means
+  // the host serving it is a web proxy — block & pin it on first use.
+  if (looksLikeProxyUrl(details.url)) {
+    const phost = hostnameOf(details.url) || lastRealHost.get(details.tabId);
+    if (phost) {
+      const cfg = await getConfig();
+      if (!isAllowed(phost, cfg)) {
+        await pinDomain(phost, "proxy-bypass", 1);
+        blockTab(details.tabId, phost, "proxy-bypass", "proxy");
+        return;
+      }
+    }
+  }
+
   if (details.frameId !== 0) return;
   const hostname = hostnameOf(details.url);
   if (!hostname) return;
