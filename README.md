@@ -147,16 +147,20 @@ hosts keeps working.
 extension/          the MV3 extension (load unpacked to dev-test)
   lib/hash.js       FNV-1a 64 + binary search — shared with the compiler
   lib/model.js      on-device classifier (mirrors classifier/infer.mjs)
+  lib/detect/       behaviour-based evasion detectors (proxy-url, glyph-cipher, svg-app)
+  lib/pins.js       block-but-never-pin store + no-pin host set
   content/          content scan + evasion guards
   block/            customizable block page
   report/           on-device report: stats, exports, force-sync
   policy/           managed-storage schema + example admin policy
   model/            bundled baseline model.bin + model-meta.json
 compiler/           list compiler + sources.json (categories, tier sizing)
+  no-pin-hosts.txt  synced block-but-never-pin baseline
 classifier/         scraper, training/eval, model export (Python + JS parity)
+tools/              build-time helpers (render-icons.py: SVG → manifest PNGs, needs Pillow)
 lists/              allow.txt / block.txt district overrides
 .github/workflows/  build + publish to gh-pages (every 2 days)
-test/selftest.mjs   end-to-end: compile fixtures, run the real engine logic
+test/               selftest.mjs (engine e2e), detect.mjs (evasion detectors), popup.mjs
 docs/               DEPLOYMENT.md (admin console, hardening), CUSTOMIZING.md
 ```
 
