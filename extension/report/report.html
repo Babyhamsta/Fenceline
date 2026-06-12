@@ -26,15 +26,22 @@
     <div><dt>Domains on list</dt><dd id="st-domains">—</dd></div>
     <div><dt>List generated</dt><dd id="st-generated">—</dd></div>
     <div><dt>Last sync</dt><dd id="st-sync">—</dd></div>
-    <div><dt>Engine</dt><dd id="st-engine">—</dd></div>
+    <div><dt>List engine</dt><dd id="st-engine">—</dd></div>
+    <div><dt>Content model</dt><dd id="st-model">—</dd></div>
     <div><dt>Lifetime blocks</dt><dd id="st-total" class="big">—</dd></div>
   </section>
   <p class="sync-row"><button id="force-sync" type="button" class="ghost small">Check for list update now</button> <span id="sync-msg"></span></p>
 
-  <section>
-    <h2>Blocks by category</h2>
-    <div id="cat-bars" class="bars"></div>
-  </section>
+  <div class="cols">
+    <section>
+      <h2>Blocks by category</h2>
+      <div id="cat-bars" class="bars"></div>
+    </section>
+    <section>
+      <h2>Blocked by <span class="dim">(filter vs. model)</span></h2>
+      <div id="src-bars" class="bars"></div>
+    </section>
+  </div>
 
   <section>
     <h2>Daily activity <span class="dim">(last 30 days)</span></h2>
@@ -53,7 +60,7 @@
     <section>
       <h2>Recent blocks</h2>
       <table id="recent">
-        <thead><tr><th>When</th><th>Domain</th><th>Category</th></tr></thead>
+        <thead><tr><th>When</th><th>Domain</th><th>Category</th><th>Blocked by</th></tr></thead>
         <tbody></tbody>
       </table>
     </section>

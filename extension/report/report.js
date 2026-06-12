@@ -12,6 +12,13 @@ function esc(s) {
   return d.innerHTML;
 }
 
+const SRC_LABEL = {
+  list: "URL filter",
+  model: "Content model",
+  "district-policy": "District policy"
+};
+const srcLabel = (s) => SRC_LABEL[s] || s || "URL filter";
+
 let statsCache = { total: 0, byCategory: {}, byDomain: {}, byDay: {} };
 let eventsCache = [];
 let cfgCache = {};
@@ -33,6 +40,11 @@ async function render() {
     : "—";
   document.getElementById("st-sync").textContent = fmtDate(status.lastFullSync);
   document.getElementById("st-engine").textContent = status.ready ? "active" : "not loaded";
+  document.getElementById("st-model").textContent = !status.modelEnabled
+    ? "disabled by policy"
+    : status.modelReady
+      ? "active · v" + String(status.modelVersion || "—").slice(0, 8)
+      : "not loaded";
   document.getElementById("st-total").textContent = (statsCache.total || 0).toLocaleString();
 
   // Policy-gated controls
@@ -54,6 +66,25 @@ async function render() {
       <div class="bar-row">
         <span class="bar-label">${esc(name)}</span>
         <span class="bar-track"><span class="bar-fill" style="width:${(n / max) * 100}%"></span></span>
+        <span class="bar-count">${n.toLocaleString()}</span>
+      </div>`
+      )
+      .join("");
+  }
+
+  // Blocks by source (URL filter vs content model vs policy)
+  const srcs = Object.entries(statsCache.bySource || {}).sort((a, b) => b[1] - a[1]);
+  const srcWrap = document.getElementById("src-bars");
+  if (!srcs.length) {
+    srcWrap.innerHTML = '<p class="empty">No blocks recorded yet.</p>';
+  } else {
+    const smax = srcs[0][1];
+    srcWrap.innerHTML = srcs
+      .map(
+        ([name, n]) => `
+      <div class="bar-row">
+        <span class="bar-label">${esc(srcLabel(name))}</span>
+        <span class="bar-track"><span class="bar-fill" style="width:${(n / smax) * 100}%"></span></span>
         <span class="bar-count">${n.toLocaleString()}</span>
       </div>`
       )
@@ -92,10 +123,10 @@ async function render() {
     ? recent
         .map(
           (e) =>
-            `<tr><td>${new Date(e.t).toLocaleString()}</td><td class="mono">${esc(e.d)}</td><td>${esc(e.c)}</td></tr>`
+            `<tr><td>${new Date(e.t).toLocaleString()}</td><td class="mono">${esc(e.d)}</td><td>${esc(e.c)}</td><td>${esc(srcLabel(e.s))}</td></tr>`
         )
         .join("")
-    : '<tr><td colspan="3" class="empty">Nothing yet.</td></tr>';
+    : '<tr><td colspan="4" class="empty">Nothing yet.</td></tr>';
 }
 
 function download(name, mime, text) {
@@ -107,9 +138,15 @@ function download(name, mime, text) {
 }
 
 document.getElementById("export-csv").addEventListener("click", () => {
-  const lines = ["timestamp,domain,category"];
+  const lines = ["timestamp,domain,category,blocked_by"];
   for (const e of eventsCache) {
-    lines.push(`${new Date(e.t).toISOString()},"${e.d.replace(/"/g, '""')}","${e.c.replace(/"/g, '""')}"`);
+    lines.push(
+      `${new Date(e.t).toISOString()},"${e.d.replace(/"/g, '""')}","${e.c.replace(/"/g, '""')}","${srcLabel(e.s)}"`
+    );
+  }
+  lines.push("", "blocked_by,total_blocks");
+  for (const [s, n] of Object.entries(statsCache.bySource || {}).sort((a, b) => b[1] - a[1])) {
+    lines.push(`"${srcLabel(s)}",${n}`);
   }
   lines.push("", "domain,total_blocks");
   for (const [d, n] of Object.entries(statsCache.byDomain || {}).sort((a, b) => b[1] - a[1])) {
