@@ -50,16 +50,41 @@ INTERIOR_LINKS = int(os.environ.get("INTERIOR_LINKS", str(CFG.get("interior_link
 RECYCLE_EVERY = 200  # reopen each worker's context to bound memory growth
 
 
-async def _worker(p, label, work, raw_fh, att_fh, state) -> None:
+# A browser dies after ~this many consecutive failed renders — almost certainly
+# a crashed chromium (real sites fail intermittently, not 12 in a row), so force
+# a relaunch instead of burning the rest of the queue against a dead process.
+FAIL_RECYCLE = 12
+
+
+async def _new_session(p):
+    """Launch a browser + media-blocking context, or (None, None) on failure."""
     try:
         browser = await p.chromium.launch(
             headless=True, args=["--disable-blink-features=AutomationControlled"]
         )
+        ctx = await open_context(browser, TIMEOUT_MS)
+        return browser, ctx
     except Exception as exc:
-        print(f"  worker launch failed: {exc}", flush=True)
+        print(f"  session launch failed: {exc}", flush=True)
+        return None, None
+
+
+async def _close_session(browser, ctx) -> None:
+    for obj in (ctx, browser):
+        if obj is None:
+            continue
+        try:
+            await obj.close()
+        except Exception:
+            pass
+
+
+async def _worker(p, label, work, raw_fh, att_fh, state) -> None:
+    browser, ctx = await _new_session(p)
+    if ctx is None:
         return
-    ctx = await open_context(browser, TIMEOUT_MS)
     served = 0
+    consec_fail = 0
     try:
         while state["kept"] < state["target"]:
             try:
@@ -82,6 +107,7 @@ async def _worker(p, label, work, raw_fh, att_fh, state) -> None:
                     raw_fh.flush()
                     state["kept"] += 1
                     homepage_usable = True
+            consec_fail = 0 if raw is not None else consec_fail + 1
             # Interior pages: only from a live homepage that itself yielded usable
             # text — a dead/blocked homepage's links aren't worth chasing. Sampled
             # records inherit the label and share the homepage's eTLD+1, so the
@@ -110,18 +136,21 @@ async def _worker(p, label, work, raw_fh, att_fh, state) -> None:
                     f"({a} tried, {rate:.1f}/s)",
                     flush=True,
                 )
+            # Recycle the whole browser — not just the context — to bound memory
+            # growth (a context-only recycle leaks the browser until a long sweep
+            # OOMs a chromium and, before this was guarded, took the whole run
+            # with it). Also recycle early when a burst of failures signals the
+            # browser already died. Relaunch failure exits this worker cleanly;
+            # the gather (return_exceptions) keeps siblings and the run alive.
             served += 1
-            if served % RECYCLE_EVERY == 0:
-                try:
-                    await ctx.close()
-                except Exception:
-                    pass
-                ctx = await open_context(browser, TIMEOUT_MS)
+            if served % RECYCLE_EVERY == 0 or consec_fail >= FAIL_RECYCLE:
+                await _close_session(browser, ctx)
+                browser, ctx = await _new_session(p)
+                consec_fail = 0
+                if ctx is None:
+                    break
     finally:
-        try:
-            await browser.close()
-        except Exception:
-            pass
+        await _close_session(browser, ctx)
 
 
 async def _amain() -> None:
@@ -176,9 +205,16 @@ async def _amain() -> None:
             attempted_path(state_dir, label).open("a", encoding="utf-8") as att_fh,
         ):
             async with async_playwright() as p:
-                await asyncio.gather(
-                    *[_worker(p, label, work, raw_fh, att_fh, state) for _ in range(WORKERS)]
+                # return_exceptions: a worker that still dies unexpectedly is
+                # collected, not propagated — siblings finish and the run moves
+                # on to the next category instead of aborting the whole sweep.
+                results = await asyncio.gather(
+                    *[_worker(p, label, work, raw_fh, att_fh, state) for _ in range(WORKERS)],
+                    return_exceptions=True,
                 )
+                for r in results:
+                    if isinstance(r, Exception):
+                        print(f"  [{label}] worker error: {r!r}", flush=True)
         outcome = "met" if state["kept"] >= TARGET else "short (pool drained)"
         print(
             f"[{label}] -> {state['kept']}/{TARGET} usable, "
