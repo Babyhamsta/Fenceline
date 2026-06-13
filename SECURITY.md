@@ -14,8 +14,9 @@ on the current version before reporting.
 **Report privately. Do not open a public issue for a working bypass or any
 weaponizable finding.**
 
-Use GitHub's **private vulnerability reporting**: the repo's **Security** tab →
-**Report a vulnerability**. Include:
+Use GitHub's **private vulnerability reporting**:
+**[Report a vulnerability](https://github.com/Babyhamsta/Fenceline/security/advisories/new)**
+(or the repo's **Security** tab → **Report a vulnerability**). Include:
 
 - what you did (steps to reproduce), the URL/technique, and the version,
 - what you expected vs. what happened (e.g. a blocked category loaded),

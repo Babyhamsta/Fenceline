@@ -7,9 +7,10 @@ body:
     attributes:
       value: |
         ⚠️ **Stop if this is weaponizable.** A working, reproducible bypass that
-        students could copy is a security vulnerability — **report it privately**
-        via the repo's **Security → Report a vulnerability** tab, not here. See
-        [SECURITY.md](../blob/main/SECURITY.md).
+        students could copy is a security vulnerability — **report it privately**:
+        [open a security advisory](https://github.com/Babyhamsta/Fenceline/security/advisories/new),
+        not a public issue. See
+        [SECURITY.md](https://github.com/Babyhamsta/Fenceline/blob/main/SECURITY.md).
 
         Use this public form only for a bypass *class* or behaviour you can
         describe without handing out a working recipe (e.g. "proxies using
