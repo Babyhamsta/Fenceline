@@ -66,6 +66,13 @@ jobs:
         run: pip install -r classifier/requirements.txt
       - name: Classifier unit tests
         run: python -m pytest classifier/tests -q
+      - name: Stage bundled model for parity
+        # infer.mjs / infer_ref.py load classifier/dist/, which is gitignored
+        # (dist/). The bundled extension/model/ is the same exported artifact, so
+        # seed dist/ from it — parity tests JS-vs-Python agreement on one model.
+        run: |
+          mkdir -p classifier/dist
+          cp extension/model/model.bin extension/model/model-meta.json classifier/dist/
       - name: Python <-> JS model parity
         env:
           FENCELINE_PYTHON: python
