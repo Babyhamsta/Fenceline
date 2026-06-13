@@ -8,7 +8,15 @@ audit downstream."""
 
 from typing import Dict
 
-MIN_TOKENS = 20
+# Thin-page gate, mirrored byte-for-byte in extension/content/scan.js so the
+# model is only ever asked to score input shapes it trained on. A page carries
+# enough signal if its body has real text OR its title+meta do — an interior
+# game page is often one canvas element (empty body) under a loud title
+# ("Slope Unblocked — Play Free") + og:description, and that signal is real.
+# Body is counted in non-space CHARS (a glyph-cipher page maps spaces away, so
+# token-counting would wrongly read it as empty); title+meta in tokens.
+MIN_BODY_CHARS = 80
+MIN_META_TOKENS = 6
 _PARK_MARKERS = (
     "domain is for sale",
     "buy this domain",
@@ -34,6 +42,18 @@ _INTERSTITIAL_MARKERS = (
     "ddos protection by cloudflare",
     "performance & security by cloudflare",
     "ray id:",
+    # Non-Cloudflare bot/rate-limit/consent walls a headless crawl can land on
+    # (Google "unusual traffic" security check, PerimeterX press-and-hold, generic
+    # access-denied). Measured at ~0.23% of the scraped corpus, concentrated in
+    # the proxy-bypass tail; same boilerplate-maps-to-wrong-label hazard.
+    "detected unusual traffic",
+    "unusual traffic from your computer",
+    "checks to see if it's really you",
+    "press & hold to confirm",
+    "access to this page has been denied",
+    "please verify you are a human",
+    "your request has been blocked",
+    "please enable javascript to continue",
 )
 # Deleted-content / error / server-default boilerplate. These platform pages
 # render the same text on thousands of domains regardless of the (now gone) site
@@ -55,12 +75,18 @@ _REMOVED_ERROR_MARKERS = (
 
 def is_usable(record: Dict) -> bool:
     text = (record.get("text") or "").lower()
-    if len(text.split()) < MIN_TOKENS:
+    title = (record.get("title") or "").lower()
+    meta = (record.get("meta") or "").lower()
+    body_chars = len("".join(text.split()))  # non-space chars
+    meta_tokens = len((title + " " + meta).split())
+    if body_chars < MIN_BODY_CHARS and meta_tokens < MIN_META_TOKENS:
         return False
-    if any(m in text for m in _PARK_MARKERS):
+    # Run every marker over the full scored document (title + meta + text): a
+    # parked/interstitial/removed page can carry its tell in any field — e.g. the
+    # challenge name in the title ("Just a moment..."), "is for sale" in meta.
+    blob = title + " " + meta + " " + text
+    if any(m in blob for m in _PARK_MARKERS):
         return False
-    # Title carries the challenge name (e.g. "Just a moment...") on some walls.
-    blob = (record.get("title") or "").lower() + " " + text
     if any(m in blob for m in _INTERSTITIAL_MARKERS):
         return False
     if any(m in blob for m in _REMOVED_ERROR_MARKERS):

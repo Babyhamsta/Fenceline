@@ -15,11 +15,13 @@ Env knobs: ``SCRAPE_WORKERS`` (default 16), ``SCRAPE_TIMEOUT_MS`` (default
 import asyncio
 import json
 import os
+import random
 import time
 from pathlib import Path
 
 from playwright.async_api import async_playwright
 
+from classifier.etld import etld1
 from classifier.extract import build_record
 from classifier.filtering import is_usable
 from classifier.frontier import (
@@ -29,7 +31,9 @@ from classifier.frontier import (
     kept_domains,
     load_attempted,
     load_ranks,
+    load_seed,
     remaining,
+    sample_interior_links,
 )
 from classifier.render import open_context, render_on_context
 
@@ -40,6 +44,9 @@ WORKERS = int(os.environ.get("SCRAPE_WORKERS", "16"))
 TIMEOUT_MS = int(os.environ.get("SCRAPE_TIMEOUT_MS", "15000"))
 HARD_DEADLINE = TIMEOUT_MS / 1000 + 6  # wall-clock cap per render
 TARGET = int(os.environ.get("SCRAPE_TARGET", str(CFG["per_class_target"])))
+# Interior pages sampled per usable homepage (same eTLD+1, label-inherited) so
+# the model also trains on interior content, not just portal homepages. 0 = off.
+INTERIOR_LINKS = int(os.environ.get("INTERIOR_LINKS", str(CFG.get("interior_links", 4))))
 RECYCLE_EVERY = 200  # reopen each worker's context to bound memory growth
 
 
@@ -59,17 +66,40 @@ async def _worker(p, label, work, raw_fh, att_fh, state) -> None:
                 break
             url = f"https://{domain}/"
             raw = await render_on_context(ctx, url, TIMEOUT_MS, HARD_DEADLINE)
-            # No await between here and the next render, so these sync writes /
-            # counter bumps can't interleave with another worker — no lock.
+            # Each sync write/counter block below runs without an await inside it,
+            # so under asyncio's single thread it can't interleave with another
+            # worker — no lock. (Awaits happen only at render points.)
             att_fh.write(domain + "\n")
             att_fh.flush()
             state["attempts"] += 1
+            homepage_usable = False
             if raw is not None:
                 rec = build_record(raw, url, label)
                 if is_usable(rec):
                     raw_fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
                     raw_fh.flush()
                     state["kept"] += 1
+                    homepage_usable = True
+            # Interior pages: only from a live homepage that itself yielded usable
+            # text — a dead/blocked homepage's links aren't worth chasing. Sampled
+            # records inherit the label and share the homepage's eTLD+1, so the
+            # registrable-domain split keeps them on one side of train/test.
+            if homepage_usable and INTERIOR_LINKS > 0:
+                rng = random.Random(domain)
+                interior = sample_interior_links(
+                    raw.get("links") or [], etld1(url), INTERIOR_LINKS, rng
+                )
+                for link in interior:
+                    if state["kept"] >= state["target"]:
+                        break
+                    raw_i = await render_on_context(ctx, link, TIMEOUT_MS, HARD_DEADLINE)
+                    if raw_i is None:
+                        continue
+                    rec_i = build_record(raw_i, link, label)
+                    if is_usable(rec_i):
+                        raw_fh.write(json.dumps(rec_i, ensure_ascii=False) + "\n")
+                        raw_fh.flush()
+                        state["kept"] += 1
             a = state["attempts"]
             if a % 100 == 0:
                 rate = a / max(1e-9, time.perf_counter() - state["t0"])
@@ -103,8 +133,17 @@ async def _amain() -> None:
     popular_first = tuple(CFG.get("popular_first", []))
     denylist = tuple(CFG.get("denylist", []))
     ranks = load_ranks(ROOT / CFG["paths"]["tranco"]) if popular_first else {}
+    # Force-label seed lists (e.g. proxy_seed.txt -> proxy-bypass) so curated
+    # domains are drawn under the right label regardless of upstream category.
+    force_label = {label: load_seed(ROOT / rel) for label, rel in CFG.get("seed_lists", {}).items()}
     pools = build_pools(
-        tsv, labels, seed=0, denylist=denylist, popular_first=popular_first, ranks=ranks
+        tsv,
+        labels,
+        seed=0,
+        denylist=denylist,
+        popular_first=popular_first,
+        ranks=ranks,
+        force_label=force_label,
     )
     kept = kept_by_label(raw_path)
     kept_doms = kept_domains(raw_path)

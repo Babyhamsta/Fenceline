@@ -31,7 +31,13 @@ _EXTRACT_JS = r"""() => {
       .filter(Boolean))];
   const hasAgeGate = /age.?(verification|gate)|must be (18|21|over)|adults only/i
       .test(text);
-  return { text, title, meta,
+  // Absolute hrefs of in-page links — the scraper samples a few same-eTLD+1 ones
+  // to also render interior pages. Capped + deduped; transient (build_record
+  // ignores it, so stored records stay byte-identical to the homepage path).
+  const links = [...new Set([...document.querySelectorAll('a[href]')]
+      .map(a => { try { return new URL(a.href, location.href).href; } catch { return ''; } })
+      .filter(h => /^https?:/i.test(h)))].slice(0, 200);
+  return { text, title, meta, links,
            structural: { script_hosts: scriptHosts,
                          iframe_count: document.querySelectorAll('iframe').length,
                          has_age_gate: hasAgeGate } };

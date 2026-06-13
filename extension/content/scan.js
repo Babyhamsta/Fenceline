@@ -70,9 +70,15 @@
     // hidden/unsized at load but is large now still gets scanned.
     if (isSubframe && (window.innerWidth < 500 || window.innerHeight < 380)) return;
     const rec = extract();
-    // Thin/blank — no signal. Count non-space CHARS, not space-tokens: a glyph-
-    // cipher page maps spaces away, so token-counting would wrongly skip it.
-    if (rec.text.replace(/\s+/g, "").length < 80) return;
+    // Thin/blank gate, mirrored byte-for-byte in classifier/filtering.py
+    // (MIN_BODY_CHARS=80, MIN_META_TOKENS=6). Keep if the body carries real text
+    // OR the title+meta do: an interior game page is often one canvas element
+    // (empty body) under a loud title + og:description, and that signal is real.
+    // Body counts non-space CHARS, not space-tokens — a glyph-cipher page maps
+    // spaces away, so token-counting would wrongly read it as empty.
+    const bodyChars = rec.text.replace(/\s+/g, "").length;
+    const metaTokens = (rec.title + " " + rec.meta).trim().split(/\s+/).filter(Boolean).length;
+    if (bodyChars < 80 && metaTokens < 6) return;
     if (rec.text === lastText) return; // content unchanged since last scan
     lastText = rec.text;
     lastScanAt = Date.now();

@@ -1,9 +1,11 @@
 {
   "categories": ["adult", "games", "gambling", "proxy-bypass"],
   "clean_label": "clean",
-  "per_class_target": 5000,
+  "per_class_target": 10000,
+  "interior_links": 4,
+  "seed_lists": { "proxy-bypass": "proxy_seed.txt" },
   "dims": 65536,
-  "block_threshold": 0.9,
+  "block_threshold": 0.8,
   "popular_first": ["adult"],
   "denylist": [
     "blogspot",
