@@ -2,6 +2,7 @@
 script; `prepare()` is the unit-testable core."""
 
 import json
+import os
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -40,7 +41,11 @@ def prepare(
 def main() -> None:
     cfg = json.loads((ROOT / "poc.json").read_text(encoding="utf-8"))
     paths = cfg["paths"]
-    train, val, test = prepare(ROOT / paths["raw"], (0.7, 0.15, 0.15), seed=0)
+    # BUILD_RAW lets the pipeline build from a freshly-scraped corpus (e.g.
+    # raw_v2.jsonl with structural features) without editing poc.json. Mirrors
+    # SCRAPE_RAW in scrape.py; resolved relative to ROOT.
+    raw = ROOT / os.environ.get("BUILD_RAW", paths["raw"])
+    train, val, test = prepare(raw, (0.7, 0.15, 0.15), seed=0)
     for name, rows in (("train", train), ("val", val), ("test", test)):
         out = ROOT / paths[name]
         out.write_text(
