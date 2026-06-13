@@ -18,6 +18,7 @@ import {
   NO_PIN_HOSTS,
   PIN_CAP
 } from "../extension/lib/pins.js";
+import { createLastRealHostStore } from "../extension/lib/last-real-host.js";
 
 let failures = 0;
 function ok(cond, msg) {
@@ -227,6 +228,63 @@ section("lib/pins buildNoPinHosts");
   );
 
   ok(buildNoPinHosts(["UPPER.example"]).has("upper.example"), "entries lowercased");
+}
+
+// ---- last-real-host store: cold-start must not clobber the session store ----
+section("lib/last-real-host");
+{
+  // Fake chrome.storage.session. set() updates synchronously so a debounced
+  // persist is observable without real timers; runNow drives the timer inline.
+  function fakeSession(initial) {
+    let data = initial ? { lastRealHost: { ...initial } } : {};
+    return {
+      async get() {
+        return { lastRealHost: data.lastRealHost };
+      },
+      set(obj) {
+        Object.assign(data, obj);
+        return Promise.resolve();
+      },
+      current: () => data.lastRealHost || {}
+    };
+  }
+  const runNow = (fn) => {
+    fn();
+    return 0;
+  };
+
+  // The bug P0.3 reintroduced: a tab-close wakes a suspended SW, the store's Map
+  // is empty (not yet hydrated), and a bare delete+persist would write {} over
+  // the stored attribution. remove() must hydrate first.
+  const store = fakeSession({ 5: "cherrion.top", 7: "proxy.example" });
+  const lrh = createLastRealHostStore(store, { schedule: runNow });
+  await lrh.remove(99); // cold-start tab-close for an unrelated tab
+  ok(
+    store.current()["5"] === "cherrion.top" && store.current()["7"] === "proxy.example",
+    "remove() on a cold store preserves stored attribution (no clobber)"
+  );
+
+  // The closed tab is still removed, the rest kept.
+  const store2 = fakeSession({ 5: "cherrion.top", 99: "closing.example" });
+  const lrh2 = createLastRealHostStore(store2, { schedule: runNow });
+  await lrh2.remove(99);
+  ok(
+    !("99" in store2.current()) && store2.current()["5"] === "cherrion.top",
+    "remove() deletes the closed tab, keeps the rest"
+  );
+
+  // set() hydrates then merges + persists; get() reads the live Map.
+  const store3 = fakeSession({ 5: "old.example" });
+  const lrh3 = createLastRealHostStore(store3, { schedule: runNow });
+  await lrh3.set(8, "new.example");
+  ok(
+    lrh3.get(5) === "old.example" && lrh3.get(8) === "new.example",
+    "set() hydrates then records both"
+  );
+  ok(
+    store3.current()["5"] === "old.example" && store3.current()["8"] === "new.example",
+    "set() persists the merged map, not just the new entry"
+  );
 }
 
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
