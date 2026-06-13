@@ -1,3 +1,14 @@
+// STATUS: NOT wired into the deploy rule. Measured net-harmful as a hard rule on
+// the held-out set — it rescued genuine gambling marketing pages (prose + no
+// cross-origin iframe) and proxy landing pages (prose + no URL box on that page),
+// dropping gambling recall 0.74->0.15 and proxy 0.59->0.25 for only a 0.005
+// clean-FP gain. The premise ("low link-density + paragraphs + no functional
+// element = article") does not generalize past the Wikipedia case. Retained as a
+// candidate SOFT feature for the Stage-2 fusion model (which can weigh it against
+// the text score instead of hard-overriding), and unit-tested below as a pure
+// function. Do not re-wire it as a hard block without far stronger article
+// evidence (e.g. paragraph_count >> 3) and fresh validation.
+//
 // Generalized prose-rescue: a hard rule that overturns a content-model block
 // when the page is clearly an ARTICLE about a topic rather than an instance of
 // it. The lexical model scores on topic vocabulary, so a Wikipedia "Proxy

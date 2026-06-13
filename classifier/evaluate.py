@@ -13,7 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
-from classifier.decision import is_search_engine_url, prose_rescue
+from classifier.decision import is_search_engine_url
 from classifier.extract import doc
 from classifier.metrics import fp_rate_on_clean, per_class
 from classifier.vectorize import DIMS, vectorize
@@ -32,18 +32,18 @@ def _scores(rec, intercept, coef):
 def _predict(prob, classes, clean_label, threshold, rec=None):
     """Block with the top blocked category only if it clears the threshold,
     otherwise fall back to clean — the high-confidence-only deploy rule, plus the
-    two device-side post-rules (search-engine exemption, prose-rescue) so the
-    metrics reflect what ships. ``rec`` supplies url + structural; omit it to
-    measure the raw model alone."""
+    search-engine Layer-3 exemption so the metrics reflect what ships. ``rec``
+    supplies the url; omit it to measure the raw model alone.
+
+    Note: prose-rescue is deliberately NOT applied — it was measured net-harmful
+    (gambling recall 0.74->0.15 for a 0.005 clean-FP gain) and is not wired into
+    the deploy rule; its signals belong in the Stage-2 fusion model instead."""
     blocked = [(c, prob[i]) for i, c in enumerate(classes) if c != clean_label]
     top_c, top_p = max(blocked, key=lambda cp: cp[1])
     if top_p < threshold:
         return clean_label
-    if rec is not None:
-        if is_search_engine_url(rec.get("url", "")):
-            return clean_label
-        if prose_rescue(top_c, rec.get("structural")):
-            return clean_label
+    if rec is not None and is_search_engine_url(rec.get("url", "")):
+        return clean_label
     return top_c
 
 
