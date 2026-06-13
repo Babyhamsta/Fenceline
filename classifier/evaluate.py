@@ -13,6 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
+from classifier.decision import is_search_engine_url, prose_rescue
 from classifier.extract import doc
 from classifier.metrics import fp_rate_on_clean, per_class
 from classifier.vectorize import DIMS, vectorize
@@ -28,12 +29,22 @@ def _scores(rec, intercept, coef):
     return e / e.sum()
 
 
-def _predict(prob, classes, clean_label, threshold):
+def _predict(prob, classes, clean_label, threshold, rec=None):
     """Block with the top blocked category only if it clears the threshold,
-    otherwise fall back to clean — the high-confidence-only deploy rule."""
+    otherwise fall back to clean — the high-confidence-only deploy rule, plus the
+    two device-side post-rules (search-engine exemption, prose-rescue) so the
+    metrics reflect what ships. ``rec`` supplies url + structural; omit it to
+    measure the raw model alone."""
     blocked = [(c, prob[i]) for i, c in enumerate(classes) if c != clean_label]
     top_c, top_p = max(blocked, key=lambda cp: cp[1])
-    return top_c if top_p >= threshold else clean_label
+    if top_p < threshold:
+        return clean_label
+    if rec is not None:
+        if is_search_engine_url(rec.get("url", "")):
+            return clean_label
+        if prose_rescue(top_c, rec.get("structural")):
+            return clean_label
+    return top_c
 
 
 def main() -> None:
@@ -59,7 +70,7 @@ def main() -> None:
     dt = (time.perf_counter() - t0) / max(1, len(test)) * 1000
 
     # operating point
-    y_pred = [_predict(p, classes, clean_label, threshold) for p in probs]
+    y_pred = [_predict(p, classes, clean_label, threshold, rec) for p, rec in zip(probs, test)]
     pc = per_class(y_true, y_pred, classes)
     print(
         f"\n=== operating point: block_threshold={threshold} (block only above this confidence) ==="
@@ -77,7 +88,7 @@ def main() -> None:
     blocked_total = sum(1 for y in y_true if y != clean_label)
     clean_total = sum(1 for y in y_true if y == clean_label)
     for t in (0.50, 0.70, 0.80, 0.90, 0.95, 0.99):
-        preds = [_predict(p, classes, clean_label, t) for p in probs]
+        preds = [_predict(p, classes, clean_label, t, rec) for p, rec in zip(probs, test)]
         fp = sum(
             1 for yt, yp in zip(y_true, preds) if yt == clean_label and yp != clean_label
         ) / max(1, clean_total)

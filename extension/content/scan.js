@@ -10,6 +10,7 @@
 // (debounce + cooldown + per-page cap + skip-if-unchanged) so a busy or
 // adversarial page can't spin the model and pin the CPU.
 
+/* global fencelineExtractStructural */
 (() => {
   const proto = location.protocol;
   if (proto !== "http:" && proto !== "https:" && proto !== "about:") return;
@@ -61,7 +62,18 @@
     // away, so it's one space-less mega-token — the char cap bounds it.
     const text = clean(body).split(" ").slice(0, TEXT_TOKEN_CAP).join(" ").slice(0, 4000);
     const lang = (document.documentElement.getAttribute("lang") || "").slice(0, 16);
-    return { type: "scanPage", url: location.href, title, meta, text, lang };
+    // Structural features (the is-vs-about sensor). Computed by the shared
+    // extractor loaded just before this script (content/structural-features.js)
+    // — the SAME source the training scraper injects, so device and corpus
+    // vectors match by construction. Guarded: a structural failure must never
+    // break the text scan.
+    let structural = null;
+    try {
+      if (typeof fencelineExtractStructural === "function") structural = fencelineExtractStructural();
+    } catch {
+      structural = null;
+    }
+    return { type: "scanPage", url: location.href, title, meta, text, lang, structural };
   }
 
   async function doScan() {

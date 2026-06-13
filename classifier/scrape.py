@@ -52,7 +52,9 @@ RECYCLE_EVERY = 200  # reopen each worker's context to bound memory growth
 
 async def _worker(p, label, work, raw_fh, att_fh, state) -> None:
     try:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(
+            headless=True, args=["--disable-blink-features=AutomationControlled"]
+        )
     except Exception as exc:
         print(f"  worker launch failed: {exc}", flush=True)
         return
@@ -124,8 +126,12 @@ async def _worker(p, label, work, raw_fh, att_fh, state) -> None:
 
 async def _amain() -> None:
     tsv = ROOT / CFG["paths"]["domains_tsv"]
-    raw_path = ROOT / CFG["paths"]["raw"]
-    state_dir = ROOT / CFG["paths"]["state_dir"]
+    # SCRAPE_RAW / SCRAPE_STATE_DIR let a run write a FRESH corpus instead of
+    # topping up the existing one — needed when re-scraping for new fields (e.g.
+    # structural features), since the attempted-log + already-met targets would
+    # otherwise make a re-run a no-op. Paths are resolved relative to ROOT.
+    raw_path = ROOT / os.environ.get("SCRAPE_RAW", CFG["paths"]["raw"])
+    state_dir = ROOT / os.environ.get("SCRAPE_STATE_DIR", CFG["paths"]["state_dir"])
     raw_path.parent.mkdir(parents=True, exist_ok=True)
     state_dir.mkdir(parents=True, exist_ok=True)
 

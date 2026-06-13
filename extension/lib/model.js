@@ -9,6 +9,8 @@
 // in the same IndexedDB the tail engine uses. Classification runs in the
 // service worker (one resident copy) — content scripts only send page text.
 
+import { proseRescue } from "./detect/prose-rescue.js";
+
 const DB_NAME = "fenceline";
 const STORE = "artifacts";
 
@@ -179,9 +181,11 @@ export function classify(text) {
 
 // The deploy rule: block with the top blocked category ONLY if its probability
 // clears the threshold; otherwise leave the page alone. thresholdOverride lets
-// an admin tighten/loosen it via managed policy. Returns {category, confidence}
-// or null.
-export function decide(text, thresholdOverride) {
+// an admin tighten/loosen it via managed policy. ``structural`` is the live
+// structural-feature dict from the content script (may be undefined from an
+// older script — then prose-rescue is simply skipped). Returns
+// {category, confidence} or null.
+export function decide(text, structural, thresholdOverride) {
   if (!COEF) return null;
   const scores = classify(text);
   const clean = META.clean_label;
@@ -191,5 +195,9 @@ export function decide(text, thresholdOverride) {
     if (cat === clean) continue;
     if (!best || p > best.confidence) best = { category: cat, confidence: p };
   }
-  return best && best.confidence >= threshold ? best : null;
+  if (!best || best.confidence < threshold) return null;
+  // Prose-rescue: a clear article ABOUT proxy/adult/gambling, lacking the
+  // category's functional element, is forced clean despite the topic vocabulary.
+  if (proseRescue(best.category, structural)) return null;
+  return best;
 }
