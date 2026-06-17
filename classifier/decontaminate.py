@@ -13,6 +13,7 @@ This is deliberately high-precision: we would rather leave a little
 contamination than discard genuinely-clean pages."""
 
 import json
+import os
 import re
 from collections import Counter
 from pathlib import Path
@@ -155,7 +156,10 @@ def partition_clean(records: List[Dict], clean_label: str) -> Tuple[List[Dict], 
 
 def main() -> None:
     cfg = json.loads((ROOT / "poc.json").read_text(encoding="utf-8"))
-    raw_path = ROOT / cfg["paths"]["raw"]
+    # DECONTAM_RAW lets a run clean a freshly-scraped corpus in place (backup +
+    # quarantine alongside it) without touching the committed raw path. Mirrors
+    # SCRAPE_RAW / BUILD_RAW; resolved relative to ROOT.
+    raw_path = ROOT / os.environ.get("DECONTAM_RAW", cfg["paths"]["raw"])
     records = [json.loads(l) for l in raw_path.read_text(encoding="utf-8").split("\n") if l.strip()]
     kept, quarantined = partition_clean(records, cfg["clean_label"])
     if not quarantined:

@@ -1,11 +1,11 @@
 from classifier.filtering import is_usable
 
 
-def _rec(text, title="t"):
+def _rec(text, title="t", meta=""):
     return {
         "text": text,
         "title": title,
-        "meta": "",
+        "meta": meta,
         "label": "games",
         "etld1": "x.com",
         "url": "https://x.com",
@@ -14,7 +14,20 @@ def _rec(text, title="t"):
 
 
 def test_rejects_thin_text():
+    # thin body AND no title/meta signal — genuinely empty, dropped
     assert not is_usable(_rec("too short"))
+
+
+def test_accepts_thin_body_with_rich_title_meta():
+    # interior canvas game page: empty-ish body, signal lives in title + meta.
+    # This is the record we changed the gate to start keeping.
+    assert is_usable(
+        _rec(
+            "loading",
+            title="Slope Unblocked Play Free Online",
+            meta="Play Slope, the endless 3D running game. Race the ball downhill.",
+        )
+    )
 
 
 def test_rejects_parked_fingerprint():
@@ -48,6 +61,19 @@ def test_rejects_just_a_moment_via_title():
             "Verifying you are not a bot before you continue please wait while we "
             "check your connection this is automatic and should only take a moment",
             title="Just a moment...",
+        )
+    )
+
+
+def test_rejects_google_unusual_traffic_botwall():
+    # the "are you a robot" security check a headless crawl lands on — must not
+    # be captured as content (it scores proxy-bypass on its own text)
+    assert not is_usable(
+        _rec(
+            "Our systems have detected unusual traffic from your computer network. "
+            "This page checks to see if it's really you sending the requests and not "
+            "a robot. Why did this happen? IP address: see our help page for more.",
+            title="Security Check",
         )
     )
 

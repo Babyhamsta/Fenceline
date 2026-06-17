@@ -10,13 +10,42 @@ such a page instead of blocking. The bulk scraper drives ``render_on_context``
 directly; ``render`` is a sync single-shot wrapper for ad-hoc/parity use."""
 
 import asyncio
+from pathlib import Path
 from typing import Dict, Optional
 
 from playwright.async_api import async_playwright
 
 _BLOCK_TYPES = {"image", "media", "font", "stylesheet"}
 
-_EXTRACT_JS = r"""() => {
+# A real managed-Chromebook UA + desktop viewport so we capture the page a
+# student would see, not a headless/bot-wall variant. Paired with an init script
+# that hides the automation flag (navigator.webdriver) — the cheapest, most
+# stable cloaking defence; full headful would need a display and destabilise a
+# 16-worker overnight sweep.
+_CHROMEBOOK_UA = (
+    "Mozilla/5.0 (X11; CrOS x86_64 15917.71.0) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+)
+_VIEWPORT = {"width": 1366, "height": 768}
+_STEALTH_JS = "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"
+
+# The structural-feature extractor is ONE source of truth shared with the live
+# content script. We inject its source into the page and call it here so the
+# training corpus and the device compute byte-identical feature vectors — there
+# is no Python-side feature math to drift. Read once at import.
+_STRUCT_SRC = (
+    Path(__file__).resolve().parent.parent / "extension" / "content" / "structural-features.js"
+).read_text(encoding="utf-8")
+
+# Single arrow function (Playwright calls it with no args). The injected source
+# defines fencelineExtractStructural() (hoisted); we add the text/title/meta/link
+# extraction and return the structural dict the shared function computes. The
+# file's trailing `module.exports` guard is inert here (module is undefined).
+_EXTRACT_JS = (
+    "() => {\n"
+    + _STRUCT_SRC
+    + "\n"
+    + r"""
   const text = document.body ? document.body.innerText : "";
   const title = document.title || "";
   const metaEl = document.querySelector('meta[name="description"]');
@@ -26,16 +55,15 @@ _EXTRACT_JS = r"""() => {
       .filter(m => !/^og:(image|video|audio|url)/i.test(m.getAttribute('property') || ''))
       .map(m => m.getAttribute('content') || '').join(' ');
   const meta = ((metaEl && metaEl.getAttribute('content')) || '') + ' ' + og;
-  const scriptHosts = [...new Set([...document.scripts]
-      .map(s => { try { return new URL(s.src).hostname; } catch { return ''; } })
-      .filter(Boolean))];
-  const hasAgeGate = /age.?(verification|gate)|must be (18|21|over)|adults only/i
-      .test(text);
-  return { text, title, meta,
-           structural: { script_hosts: scriptHosts,
-                         iframe_count: document.querySelectorAll('iframe').length,
-                         has_age_gate: hasAgeGate } };
+  // Absolute hrefs of in-page links — the scraper samples a few same-eTLD+1 ones
+  // to also render interior pages. Capped + deduped; transient (build_record
+  // ignores it, so stored records stay byte-identical to the homepage path).
+  const links = [...new Set([...document.querySelectorAll('a[href]')]
+      .map(a => { try { return new URL(a.href, location.href).href; } catch { return ''; } })
+      .filter(h => /^https?:/i.test(h)))].slice(0, 200);
+  return { text, title, meta, links, structural: fencelineExtractStructural() };
 }"""
+)
 
 
 async def _route(route) -> None:
@@ -54,8 +82,16 @@ async def open_context(browser, timeout_ms: int = 15000):
     """A media-blocking context. Reused across many pages by the bulk scraper
     so we pay one browser launch per worker instead of one per URL.
     ignore_https_errors: many live proxy/adult/gambling sites run expired or
-    self-signed certs — we still want their text rather than dropping them."""
-    ctx = await browser.new_context(ignore_https_errors=True)
+    self-signed certs — we still want their text rather than dropping them.
+    UA/viewport/stealth: present as a real Chromebook so we don't capture
+    headless-only bot walls or cloaked stubs."""
+    ctx = await browser.new_context(
+        ignore_https_errors=True,
+        user_agent=_CHROMEBOOK_UA,
+        locale="en-US",
+        viewport=_VIEWPORT,
+    )
+    await ctx.add_init_script(_STEALTH_JS)
     await ctx.route("**/*", _route)
     ctx.set_default_timeout(timeout_ms)
     ctx.set_default_navigation_timeout(timeout_ms)
@@ -94,7 +130,9 @@ def render(url: str, timeout_ms: int = 15000) -> Optional[Dict]:
 
     async def _run():
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
+            browser = await p.chromium.launch(
+                headless=True, args=["--disable-blink-features=AutomationControlled"]
+            )
             try:
                 ctx = await open_context(browser, timeout_ms)
                 return await render_on_context(ctx, url, timeout_ms)

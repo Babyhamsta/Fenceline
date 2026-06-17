@@ -11,7 +11,9 @@ import json
 import random
 from pathlib import Path
 from typing import Dict, List, Set
+from urllib.parse import urlsplit
 
+from classifier.etld import etld1
 from classifier.filtering import is_usable
 
 
@@ -22,6 +24,7 @@ def build_pools(
     denylist: tuple = (),
     popular_first: tuple = (),
     ranks: Dict[str, int] = None,
+    force_label: Dict[str, List[str]] = None,
 ) -> Dict[str, List[str]]:
     """Bucket dist/domains.tsv by label into draw order.
 
@@ -29,7 +32,12 @@ def build_pools(
     dead-blog tail, ad-tech/CDN noise, big general sites mis-listed as adult).
     Labels in ``popular_first`` are ordered by Tranco rank (popular/live sites
     first — representative, and far higher keep-rate) with the unranked tail
-    shuffled after; every other label is shuffled deterministically."""
+    shuffled after; every other label is shuffled deterministically.
+
+    ``force_label`` maps a label to domains that must be drawn under that label
+    regardless of how the blocklists categorized them (e.g. web proxies that sit
+    under ``adult`` by precedence). Forced domains are removed from every other
+    pool and prepended to their label's pool so they're scraped first."""
     deny = tuple(denylist)
     ranks = ranks or {}
     pools: Dict[str, List[str]] = {lab: [] for lab in labels}
@@ -51,7 +59,60 @@ def build_pools(
             pools[label] = ranked + unranked
         else:
             rng.shuffle(pools[label])
+    if force_label:
+        forced = {d for doms in force_label.values() for d in doms}
+        for lab in pools:
+            pools[lab] = [d for d in pools[lab] if d not in forced]
+        for lab, doms in force_label.items():
+            if lab not in pools:
+                continue
+            seen: Set[str] = set()
+            uniq = [d for d in doms if not (d in seen or seen.add(d))]
+            pools[lab] = uniq + pools[lab]
     return pools
+
+
+def load_seed(path: Path) -> List[str]:
+    """Read a seed list (one bare domain per line; ``#`` comments and blanks
+    skipped) — e.g. proxy_seed.txt, force-labeled proxy-bypass at scrape time."""
+    p = Path(path)
+    if not p.exists():
+        return []
+    out: List[str] = []
+    for line in p.read_text(encoding="utf-8").splitlines():
+        s = line.strip()
+        if s and not s.startswith("#"):
+            out.append(s)
+    return out
+
+
+def sample_interior_links(
+    links: List[str], base_etld1: str, k: int, rng: random.Random
+) -> List[str]:
+    """Pick up to ``k`` random same-eTLD+1 interior URLs from a homepage's links.
+
+    Random (not pattern-matched) keeps selection behavior-based — on a game/proxy
+    portal a random interior link is overwhelmingly a game/proxy page. Root-path
+    links (the homepage itself) and off-site links are dropped; the rest are
+    deduped, then a random subset is returned."""
+    if k <= 0 or not base_etld1:
+        return []
+    seen: Set[str] = set()
+    candidates: List[str] = []
+    for href in links:
+        try:
+            parts = urlsplit(href)
+        except ValueError:
+            continue
+        if parts.path.strip("/") == "" and not parts.query:
+            continue  # homepage root, not an interior page
+        if href in seen or etld1(href) != base_etld1:
+            continue
+        seen.add(href)
+        candidates.append(href)
+    if len(candidates) <= k:
+        return candidates
+    return rng.sample(candidates, k)
 
 
 def load_ranks(tranco_path: Path) -> Dict[str, int]:

@@ -52,3 +52,23 @@ hidemy.name
 freeproxy.io
 proxynova.com
 unblockvideos.com
+
+# unblokkked.web.app (scraped 2026-06-12) — one branded domain per proxy
+# provider. Mirror endpoints and shared-host (vercel.app/workers.dev/…) URLs
+# were dropped: the mirrors are the same proxy on different endpoints, and a
+# bare platform domain would mislabel all of it. Refresh: python
+# classifier/scrape_unblokkked.py
+anura.pro
+canlite.org
+cherrion.top
+infamous-tutoring.space
+krypt-on.top
+lucideon.top
+luminal.lol
+maddox.games
+mexi.lol
+nikehub.org
+noblo.cc
+otonic.org
+splash.best
+waves.lat

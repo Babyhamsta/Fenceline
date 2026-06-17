@@ -1,4 +1,5 @@
 import json
+import random
 
 from classifier.frontier import (
     attempted_path,
@@ -8,7 +9,9 @@ from classifier.frontier import (
     kept_domains,
     load_attempted,
     load_ranks,
+    load_seed,
     remaining,
+    sample_interior_links,
 )
 
 
@@ -34,7 +37,7 @@ def test_remaining_excludes_attempted_and_kept_preserving_order():
 
 def test_kept_by_label_counts_only_usable_but_skipset_is_all(tmp_path):
     raw = tmp_path / "raw.jsonl"
-    good = {"label": "games", "url": "https://g.com/", "text": " ".join(["w"] * 30)}
+    good = {"label": "games", "url": "https://g.com/", "text": " ".join(["games"] * 30)}
     thin = {"label": "games", "url": "https://t.com/", "text": "too short"}
     raw.write_text(json.dumps(good) + "\n" + json.dumps(thin) + "\n", encoding="utf-8")
     # only the usable record counts toward the target...
@@ -82,3 +85,52 @@ def test_load_ranks_parses_csv(tmp_path):
     csv = tmp_path / "tranco.csv"
     csv.write_text("1,google.com\n2,youtube.com\n", encoding="utf-8")
     assert load_ranks(csv) == {"google.com": 1, "youtube.com": 2}
+
+
+def test_force_label_moves_domain_and_prepends(tmp_path):
+    tsv = tmp_path / "d.tsv"
+    # proxy.example is listed as adult upstream; force it to proxy-bypass
+    tsv.write_text(
+        "proxy.example\tadult\nporn.com\tadult\nkproxy.com\tproxy-bypass\n", encoding="utf-8"
+    )
+    pools = build_pools(
+        tsv,
+        ["adult", "proxy-bypass"],
+        seed=0,
+        force_label={"proxy-bypass": ["proxy.example", "kproxy.com"]},
+    )
+    assert "proxy.example" not in pools["adult"]  # removed from its upstream label
+    assert pools["proxy-bypass"][:2] == ["proxy.example", "kproxy.com"]  # forced, prepended first
+    assert pools["adult"] == ["porn.com"]
+
+
+def test_load_seed_skips_comments_and_blanks(tmp_path):
+    p = tmp_path / "seed.txt"
+    p.write_text("# header\n\nfoo.com\n  bar.net  \n# mid\nbaz.io\n", encoding="utf-8")
+    assert load_seed(p) == ["foo.com", "bar.net", "baz.io"]
+    assert load_seed(tmp_path / "missing.txt") == []
+
+
+def test_sample_interior_links_same_etld1_only():
+    links = [
+        "https://poki.com/",  # homepage root — excluded
+        "https://poki.com/en/g/slope",  # interior, same eTLD+1
+        "https://poki.com/en/g/subway-surfers",  # interior, same eTLD+1
+        "https://blog.poki.com/post/news",  # subdomain, same eTLD+1
+        "https://google.com/ads",  # off-site — excluded
+        "http://not a url",  # unparseable host -> different eTLD+1, excluded
+    ]
+    out = sample_interior_links(links, "poki.com", 5, random.Random(0))
+    assert set(out) == {
+        "https://poki.com/en/g/slope",
+        "https://poki.com/en/g/subway-surfers",
+        "https://blog.poki.com/post/news",
+    }
+
+
+def test_sample_interior_links_caps_at_k_and_is_seed_deterministic():
+    links = [f"https://site.com/g/{i}" for i in range(20)]
+    a = sample_interior_links(links, "site.com", 4, random.Random(0))
+    b = sample_interior_links(links, "site.com", 4, random.Random(0))
+    assert len(a) == 4 and a == b  # capped + deterministic given the same rng seed
+    assert sample_interior_links(links, "site.com", 0, random.Random(0)) == []

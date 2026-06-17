@@ -29,11 +29,20 @@ def hamming(a: int, b: int) -> int:
     return bin(a ^ b).count("1")
 
 
+def _doc(rec: Dict) -> str:
+    # Hash the full scored document (title + meta + text), not the body alone.
+    # Interior game pages have near-empty bodies, so body-only simhashing would
+    # collapse them all to simhash("") and drop every one but the first — exactly
+    # the thin-but-distinct records we want to keep. Shared site chrome still
+    # dominates the token mass, so genuine near-dupes collapse as before.
+    return f"{rec.get('title', '')} {rec.get('meta', '')} {rec.get('text', '')}"
+
+
 def dedup(records: List[Dict], max_distance: int = 4) -> List[Dict]:
     kept: List[Dict] = []
     seen: List[int] = []
     for rec in records:
-        h = simhash(rec.get("text", ""))
+        h = simhash(_doc(rec))
         if any(hamming(h, s) <= max_distance for s in seen):
             continue
         seen.append(h)

@@ -9,11 +9,14 @@
 // in the same IndexedDB the tail engine uses. Classification runs in the
 // service worker (one resident copy) — content scripts only send page text.
 
+import { setFusion, isFusionReady, fusionScores } from "./fusion.js";
+import { proseRescue } from "./detect/prose-rescue.js";
+
 const DB_NAME = "fenceline";
 const STORE = "artifacts";
 
 let COEF = null; // Float32Array, row-major [classes x dims]
-let META = null; // { version, dims, classes, intercept, clean_label, block_threshold }
+let META = null; // { version, dims, classes, intercept, clean_label, block_threshold, thr_* }
 let loadPromise = null;
 
 function idb() {
@@ -41,13 +44,15 @@ function idbSet(db, key, val) {
   });
 }
 
-export async function storeModel(coefBuf, meta) {
+export async function storeModel(coefBuf, meta, fusion) {
   const db = await idb();
   await idbSet(db, "model", coefBuf);
   await idbSet(db, "modelMeta", meta);
+  if (fusion) await idbSet(db, "fusion", fusion);
   db.close();
   COEF = new Float32Array(coefBuf);
   META = meta;
+  if (fusion) setFusion(fusion);
 }
 
 export async function getStoredModelVersion() {
@@ -74,6 +79,16 @@ async function loadBundled() {
     if (!binRes.ok || !metaRes.ok) return false;
     COEF = new Float32Array(await binRes.arrayBuffer());
     META = await metaRes.json();
+    // Stage-2 fusion model travels alongside the text weights. Optional: if it's
+    // absent or fails to parse, decide() degrades to text-only.
+    if (META.fusion_file) {
+      try {
+        const fRes = await fetch(base + META.fusion_file);
+        if (fRes.ok) setFusion(await fRes.json());
+      } catch {
+        /* text-only fallback */
+      }
+    }
     return true;
   } catch {
     return false;
@@ -86,11 +101,16 @@ export function ensureModelLoaded() {
     loadPromise = (async () => {
       try {
         const db = await idb();
-        const [buf, meta] = await Promise.all([idbGet(db, "model"), idbGet(db, "modelMeta")]);
+        const [buf, meta, fusion] = await Promise.all([
+          idbGet(db, "model"),
+          idbGet(db, "modelMeta"),
+          idbGet(db, "fusion")
+        ]);
         db.close();
         if (buf && meta) {
           COEF = new Float32Array(buf);
           META = meta;
+          if (fusion) setFusion(fusion);
           return true;
         }
         // No synced model yet — fall back to the bundled baseline.
@@ -177,19 +197,58 @@ export function classify(text) {
   return scores;
 }
 
-// The deploy rule: block with the top blocked category ONLY if its probability
-// clears the threshold; otherwise leave the page alone. thresholdOverride lets
-// an admin tighten/loosen it via managed policy. Returns {category, confidence}
-// or null.
-export function decide(text, thresholdOverride) {
-  if (!COEF) return null;
-  const scores = classify(text);
-  const clean = META.clean_label;
-  const threshold = thresholdOverride != null ? thresholdOverride : META.block_threshold;
+// Top non-clean category and its probability from a {class: prob} map.
+function topBlocked(scores, clean) {
   let best = null;
   for (const [cat, p] of Object.entries(scores)) {
     if (cat === clean) continue;
     if (!best || p > best.confidence) best = { category: cat, confidence: p };
   }
-  return best && best.confidence >= threshold ? best : null;
+  return best;
+}
+
+// The deploy rule: the HYBRID of the text model and the Stage-2 fusion GBDT.
+//
+//   1. Fusion (text scores + page structure) is the primary call — it learned
+//      the is-vs-about distinction, so it cleans articles a bag-of-words blocks.
+//      Block when its top category clears thr_fusion.
+//   2. Text is a high-recall BACKSTOP for true positives the fusion misses
+//      (operator landing pages, atypical portals): block when text clears
+//      thr_text, UNLESS the structural article-guard (proseRescue) says the page
+//      is clearly prose about the topic with no functional element — that guard
+//      is what stops the text model's vocabulary false-positives (Wikipedia
+//      "Proxy server") from leaking through the backstop.
+//
+// ``structural`` is the live feature dict from the content script. The SERP
+// exemption is applied upstream in sw.js (before this runs). If the fusion model
+// isn't loaded, we degrade to text-only at block_threshold. thresholdOverride
+// (managed policy) tightens the primary threshold and floors the backstop.
+// Returns {category, confidence} or null.
+export function decide(text, structural, thresholdOverride) {
+  if (!COEF) return null;
+  const clean = META.clean_label;
+  const textScores = classify(text);
+
+  // Text-only fallback when no fusion model is present.
+  if (!isFusionReady()) {
+    const threshold = thresholdOverride != null ? thresholdOverride : META.block_threshold;
+    const best = topBlocked(textScores, clean);
+    return best && best.confidence >= threshold ? best : null;
+  }
+
+  const thrFusion = thresholdOverride != null ? thresholdOverride : (META.thr_fusion ?? 0.97);
+  const thrText =
+    thresholdOverride != null
+      ? Math.max(META.thr_text ?? 0.89, thresholdOverride)
+      : (META.thr_text ?? 0.89);
+
+  const fScores = fusionScores(textScores, structural);
+  const fBest = topBlocked(fScores, clean);
+  if (fBest && fBest.confidence >= thrFusion) return fBest;
+
+  const tBest = topBlocked(textScores, clean);
+  if (tBest && tBest.confidence >= thrText && !proseRescue(tBest.category, structural)) {
+    return tBest;
+  }
+  return null;
 }

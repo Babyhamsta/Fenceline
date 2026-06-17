@@ -21,7 +21,35 @@ def test_assembles_and_caps():
 def test_missing_fields_default_safely():
     rec = build_record({"text": "hi"}, "https://x.example", "clean")
     assert rec["title"] == "" and rec["meta"] == ""
-    assert rec["structural"] == {"script_hosts": [], "iframe_count": 0, "has_age_gate": False}
+    s = rec["structural"]
+    # every structural key present and zero-defaulted, regardless of input
+    assert s["script_hosts"] == []
+    assert s["iframe_count"] == 0 and s["paragraph_count"] == 0
+    assert s["link_density"] == 0.0 and s["script_host_entropy"] == 0.0
+    assert s["has_age_gate"] is False and s["has_url_like_input"] is False
+
+
+def test_structural_passthrough_and_coercion():
+    # full extractor payload (strings/ints from JSON) coerces to typed scalars
+    raw = {
+        "text": "hello world games arcade fun play online now today friends here",
+        "structural": {
+            "link_density": "0.42",
+            "paragraph_count": 7,
+            "has_url_like_input": True,
+            "url_embeds_url": False,
+            "iframe_count": "3",
+            "script_hosts": ["a.com", "b.com"],
+            "script_host_entropy": 1.5,
+        },
+    }
+    s = build_record(raw, "https://x.example", "proxy-bypass")["structural"]
+    assert s["link_density"] == 0.42 and isinstance(s["link_density"], float)
+    assert s["paragraph_count"] == 7
+    assert s["iframe_count"] == 3 and isinstance(s["iframe_count"], int)
+    assert s["has_url_like_input"] is True and s["url_embeds_url"] is False
+    assert s["script_hosts"] == ["a.com", "b.com"]
+    assert s["script_host_entropy"] == 1.5
 
 
 def test_strips_data_uris_from_all_text_fields():

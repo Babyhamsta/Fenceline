@@ -15,11 +15,13 @@ Env knobs: ``SCRAPE_WORKERS`` (default 16), ``SCRAPE_TIMEOUT_MS`` (default
 import asyncio
 import json
 import os
+import random
 import time
 from pathlib import Path
 
 from playwright.async_api import async_playwright
 
+from classifier.etld import etld1
 from classifier.extract import build_record
 from classifier.filtering import is_usable
 from classifier.frontier import (
@@ -29,7 +31,9 @@ from classifier.frontier import (
     kept_domains,
     load_attempted,
     load_ranks,
+    load_seed,
     remaining,
+    sample_interior_links,
 )
 from classifier.render import open_context, render_on_context
 
@@ -40,17 +44,47 @@ WORKERS = int(os.environ.get("SCRAPE_WORKERS", "16"))
 TIMEOUT_MS = int(os.environ.get("SCRAPE_TIMEOUT_MS", "15000"))
 HARD_DEADLINE = TIMEOUT_MS / 1000 + 6  # wall-clock cap per render
 TARGET = int(os.environ.get("SCRAPE_TARGET", str(CFG["per_class_target"])))
+# Interior pages sampled per usable homepage (same eTLD+1, label-inherited) so
+# the model also trains on interior content, not just portal homepages. 0 = off.
+INTERIOR_LINKS = int(os.environ.get("INTERIOR_LINKS", str(CFG.get("interior_links", 4))))
 RECYCLE_EVERY = 200  # reopen each worker's context to bound memory growth
 
 
-async def _worker(p, label, work, raw_fh, att_fh, state) -> None:
+# A browser dies after ~this many consecutive failed renders — almost certainly
+# a crashed chromium (real sites fail intermittently, not 12 in a row), so force
+# a relaunch instead of burning the rest of the queue against a dead process.
+FAIL_RECYCLE = 12
+
+
+async def _new_session(p):
+    """Launch a browser + media-blocking context, or (None, None) on failure."""
     try:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(
+            headless=True, args=["--disable-blink-features=AutomationControlled"]
+        )
+        ctx = await open_context(browser, TIMEOUT_MS)
+        return browser, ctx
     except Exception as exc:
-        print(f"  worker launch failed: {exc}", flush=True)
+        print(f"  session launch failed: {exc}", flush=True)
+        return None, None
+
+
+async def _close_session(browser, ctx) -> None:
+    for obj in (ctx, browser):
+        if obj is None:
+            continue
+        try:
+            await obj.close()
+        except Exception:
+            pass
+
+
+async def _worker(p, label, work, raw_fh, att_fh, state) -> None:
+    browser, ctx = await _new_session(p)
+    if ctx is None:
         return
-    ctx = await open_context(browser, TIMEOUT_MS)
     served = 0
+    consec_fail = 0
     try:
         while state["kept"] < state["target"]:
             try:
@@ -59,17 +93,41 @@ async def _worker(p, label, work, raw_fh, att_fh, state) -> None:
                 break
             url = f"https://{domain}/"
             raw = await render_on_context(ctx, url, TIMEOUT_MS, HARD_DEADLINE)
-            # No await between here and the next render, so these sync writes /
-            # counter bumps can't interleave with another worker — no lock.
+            # Each sync write/counter block below runs without an await inside it,
+            # so under asyncio's single thread it can't interleave with another
+            # worker — no lock. (Awaits happen only at render points.)
             att_fh.write(domain + "\n")
             att_fh.flush()
             state["attempts"] += 1
+            homepage_usable = False
             if raw is not None:
                 rec = build_record(raw, url, label)
                 if is_usable(rec):
                     raw_fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
                     raw_fh.flush()
                     state["kept"] += 1
+                    homepage_usable = True
+            consec_fail = 0 if raw is not None else consec_fail + 1
+            # Interior pages: only from a live homepage that itself yielded usable
+            # text — a dead/blocked homepage's links aren't worth chasing. Sampled
+            # records inherit the label and share the homepage's eTLD+1, so the
+            # registrable-domain split keeps them on one side of train/test.
+            if homepage_usable and INTERIOR_LINKS > 0:
+                rng = random.Random(domain)
+                interior = sample_interior_links(
+                    raw.get("links") or [], etld1(url), INTERIOR_LINKS, rng
+                )
+                for link in interior:
+                    if state["kept"] >= state["target"]:
+                        break
+                    raw_i = await render_on_context(ctx, link, TIMEOUT_MS, HARD_DEADLINE)
+                    if raw_i is None:
+                        continue
+                    rec_i = build_record(raw_i, link, label)
+                    if is_usable(rec_i):
+                        raw_fh.write(json.dumps(rec_i, ensure_ascii=False) + "\n")
+                        raw_fh.flush()
+                        state["kept"] += 1
             a = state["attempts"]
             if a % 100 == 0:
                 rate = a / max(1e-9, time.perf_counter() - state["t0"])
@@ -78,24 +136,31 @@ async def _worker(p, label, work, raw_fh, att_fh, state) -> None:
                     f"({a} tried, {rate:.1f}/s)",
                     flush=True,
                 )
+            # Recycle the whole browser — not just the context — to bound memory
+            # growth (a context-only recycle leaks the browser until a long sweep
+            # OOMs a chromium and, before this was guarded, took the whole run
+            # with it). Also recycle early when a burst of failures signals the
+            # browser already died. Relaunch failure exits this worker cleanly;
+            # the gather (return_exceptions) keeps siblings and the run alive.
             served += 1
-            if served % RECYCLE_EVERY == 0:
-                try:
-                    await ctx.close()
-                except Exception:
-                    pass
-                ctx = await open_context(browser, TIMEOUT_MS)
+            if served % RECYCLE_EVERY == 0 or consec_fail >= FAIL_RECYCLE:
+                await _close_session(browser, ctx)
+                browser, ctx = await _new_session(p)
+                consec_fail = 0
+                if ctx is None:
+                    break
     finally:
-        try:
-            await browser.close()
-        except Exception:
-            pass
+        await _close_session(browser, ctx)
 
 
 async def _amain() -> None:
     tsv = ROOT / CFG["paths"]["domains_tsv"]
-    raw_path = ROOT / CFG["paths"]["raw"]
-    state_dir = ROOT / CFG["paths"]["state_dir"]
+    # SCRAPE_RAW / SCRAPE_STATE_DIR let a run write a FRESH corpus instead of
+    # topping up the existing one — needed when re-scraping for new fields (e.g.
+    # structural features), since the attempted-log + already-met targets would
+    # otherwise make a re-run a no-op. Paths are resolved relative to ROOT.
+    raw_path = ROOT / os.environ.get("SCRAPE_RAW", CFG["paths"]["raw"])
+    state_dir = ROOT / os.environ.get("SCRAPE_STATE_DIR", CFG["paths"]["state_dir"])
     raw_path.parent.mkdir(parents=True, exist_ok=True)
     state_dir.mkdir(parents=True, exist_ok=True)
 
@@ -103,8 +168,17 @@ async def _amain() -> None:
     popular_first = tuple(CFG.get("popular_first", []))
     denylist = tuple(CFG.get("denylist", []))
     ranks = load_ranks(ROOT / CFG["paths"]["tranco"]) if popular_first else {}
+    # Force-label seed lists (e.g. proxy_seed.txt -> proxy-bypass) so curated
+    # domains are drawn under the right label regardless of upstream category.
+    force_label = {label: load_seed(ROOT / rel) for label, rel in CFG.get("seed_lists", {}).items()}
     pools = build_pools(
-        tsv, labels, seed=0, denylist=denylist, popular_first=popular_first, ranks=ranks
+        tsv,
+        labels,
+        seed=0,
+        denylist=denylist,
+        popular_first=popular_first,
+        ranks=ranks,
+        force_label=force_label,
     )
     kept = kept_by_label(raw_path)
     kept_doms = kept_domains(raw_path)
@@ -131,9 +205,16 @@ async def _amain() -> None:
             attempted_path(state_dir, label).open("a", encoding="utf-8") as att_fh,
         ):
             async with async_playwright() as p:
-                await asyncio.gather(
-                    *[_worker(p, label, work, raw_fh, att_fh, state) for _ in range(WORKERS)]
+                # return_exceptions: a worker that still dies unexpectedly is
+                # collected, not propagated — siblings finish and the run moves
+                # on to the next category instead of aborting the whole sweep.
+                results = await asyncio.gather(
+                    *[_worker(p, label, work, raw_fh, att_fh, state) for _ in range(WORKERS)],
+                    return_exceptions=True,
                 )
+                for r in results:
+                    if isinstance(r, Exception):
+                        print(f"  [{label}] worker error: {r!r}", flush=True)
         outcome = "met" if state["kept"] >= TARGET else "short (pool drained)"
         print(
             f"[{label}] -> {state['kept']}/{TARGET} usable, "

@@ -20,6 +20,7 @@ import { getConfig } from "./lib/config.js";
 import { ensureModelLoaded, isModelReady, modelVersion, decide } from "./lib/model.js";
 import { looksLikeProxyUrl } from "./lib/detect/proxy-url.js";
 import { detectGlyphCipher } from "./lib/detect/glyph-cipher.js";
+import { isSearchEngineSerp } from "./lib/detect/search-engine.js";
 import { svgHasForeignObject, svgHasExecutableContent } from "./lib/detect/svg-app.js";
 import { createPinStore, pinnedHit, buildNoPinHosts, NO_PIN_HOSTS } from "./lib/pins.js";
 import { createLastRealHostStore } from "./lib/last-real-host.js";
@@ -147,6 +148,16 @@ function hostnameOf(url) {
     return u.hostname;
   } catch {
     return null;
+  }
+}
+
+// Path only, defaulting to "/" so a bare/odd URL can't accidentally widen the
+// search-engine SERP-path match.
+function pathnameOf(url) {
+  try {
+    return new URL(url).pathname || "/";
+  } catch {
+    return "/";
   }
 }
 
@@ -451,13 +462,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ blocked: false });
         return;
       }
+      // Search-engine Layer-3 exemption (must precede the content model): a real
+      // SERP is structurally a link-hub and scores blocked-category on whatever
+      // the student searched. Exact-host + SERP-path scoped, top-frame only, and
+      // only skips the model — Layer 4 (proxy-URL) still fires on this nav, so
+      // translate.google.com/?u=<proxy> and embedded-URL links are unaffected.
+      if (!isSub && isSearchEngineSerp(hostname, pathnameOf(msg.url))) {
+        sendResponse({ blocked: false });
+        return;
+      }
       await ensureModelLoaded();
       if (!isModelReady()) {
         sendResponse({ blocked: false });
         return;
       }
       const doc = `${msg.title || ""} ${msg.meta || ""} ${msg.text || ""}`;
-      const verdict = decide(doc, cfg.contentModelThreshold);
+      const verdict = decide(doc, msg.structural, cfg.contentModelThreshold);
       if (verdict && sender.tab) {
         // Pin only top-frame hits (the site's own content). A sub-frame hit
         // blocks this visit but isn't pinned — a proxy just re-flags next time,

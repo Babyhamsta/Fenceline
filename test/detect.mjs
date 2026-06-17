@@ -9,6 +9,8 @@
 import { looksLikeProxyUrl, _decodesToUrl } from "../extension/lib/detect/proxy-url.js";
 import { detectGlyphCipher } from "../extension/lib/detect/glyph-cipher.js";
 import { svgHasForeignObject, svgHasExecutableContent } from "../extension/lib/detect/svg-app.js";
+import { proseRescue } from "../extension/lib/detect/prose-rescue.js";
+import { isSearchEngineSerp } from "../extension/lib/detect/search-engine.js";
 import {
   isNoPinHost,
   pinnedHit,
@@ -130,6 +132,105 @@ section("detect/svg-app");
     !svgHasForeignObject("<svg><rect/><path/></svg>"),
     "plain vector art (no foreignObject) → false"
   );
+}
+
+// ---- prose-rescue -----------------------------------------------------
+// Structural vectors are the measured values from the rework investigation
+// (docs/model-rework-plan.md evidence appendix) — the hard cases the rule must
+// get right. proseRescue(category, structural) => true means "force clean".
+section("detect/prose-rescue");
+{
+  // Wikipedia "Proxy server" ARTICLE: prose, no URL box → rescued to clean.
+  ok(
+    proseRescue("proxy-bypass", {
+      link_density: 0.2,
+      paragraph_count: 60,
+      has_url_like_input: false,
+      url_embeds_url: false,
+      has_dominant_canvas: false
+    }),
+    "Wikipedia proxy article → rescued (clean)"
+  );
+  // croxyproxy IS a proxy: passes both prose tests but HAS a url-like input →
+  // must NOT be rescued. The load-bearing regression.
+  ok(
+    !proseRescue("proxy-bypass", {
+      link_density: 0.19,
+      paragraph_count: 6,
+      has_url_like_input: true,
+      url_embeds_url: false,
+      has_dominant_canvas: false
+    }),
+    "croxyproxy (has url input) → NOT rescued"
+  );
+  // cherrion.top IS a proxy rendered full-canvas: thin prose + dominant canvas.
+  ok(
+    !proseRescue("proxy-bypass", {
+      link_density: 0,
+      paragraph_count: 2,
+      has_dominant_canvas: true
+    }),
+    "cherrion full-canvas proxy → NOT rescued"
+  );
+  // Wikipedia Category LIST: high link-density, few paragraphs → not prose.
+  ok(
+    !proseRescue("proxy-bypass", { link_density: 0.75, paragraph_count: 2 }),
+    "Wikipedia category list (dense, thin prose) → NOT rescued"
+  );
+  // adult: sex-ed article (prose, no player) rescued; a site with a video isn't.
+  ok(
+    proseRescue("adult", { link_density: 0.1, paragraph_count: 10, has_video_player: false }),
+    "adult prose article (no player) → rescued"
+  );
+  ok(
+    !proseRescue("adult", { link_density: 0.1, paragraph_count: 10, has_video_player: true }),
+    "adult page with video player → NOT rescued"
+  );
+  // gambling: news article rescued; a casino with a large cross-origin game frame isn't.
+  ok(
+    proseRescue("gambling", {
+      link_density: 0.2,
+      paragraph_count: 8,
+      has_large_xorigin_iframe: false
+    }),
+    "gambling news article → rescued"
+  );
+  ok(
+    !proseRescue("gambling", {
+      link_density: 0.2,
+      paragraph_count: 8,
+      has_large_xorigin_iframe: true
+    }),
+    "gambling site with casino iframe → NOT rescued"
+  );
+  // games is never rescuable (a game is thin-text+canvas, not an "article").
+  ok(
+    !proseRescue("games", { link_density: 0.1, paragraph_count: 20 }),
+    "games category → never rescued"
+  );
+  // missing structural / absent fields → fail safe (keep blocking).
+  ok(!proseRescue("proxy-bypass", null), "no structural → not rescued");
+  ok(
+    !proseRescue("proxy-bypass", { paragraph_count: 10 }),
+    "missing link_density (reads 0... but no paras-only) still needs density<0.33"
+  );
+}
+
+// ---- search-engine exemption ------------------------------------------
+section("detect/search-engine");
+{
+  ok(isSearchEngineSerp("www.google.com", "/search"), "google /search → exempt");
+  ok(isSearchEngineSerp("google.com", "/"), "google homepage → exempt");
+  ok(isSearchEngineSerp("duckduckgo.com", "/html"), "ddg /html SERP → exempt");
+  ok(isSearchEngineSerp("search.brave.com", "/search"), "brave search → exempt");
+  ok(isSearchEngineSerp("search.yahoo.com", "/search?p=x".split("?")[0]), "yahoo search → exempt");
+  // translate.google.com is a PROXY vector — exact-host match means it's NOT exempt.
+  ok(!isSearchEngineSerp("translate.google.com", "/"), "translate.google.com → NOT exempt");
+  ok(!isSearchEngineSerp("webcache.googleusercontent.com", "/"), "google cache host → NOT exempt");
+  // a non-SERP path on a search host isn't exempt (path-scoped).
+  ok(!isSearchEngineSerp("www.google.com", "/maps"), "google /maps → NOT exempt");
+  // unrelated host that merely has /search → not exempt.
+  ok(!isSearchEngineSerp("evil.example", "/search"), "non-engine /search → NOT exempt");
 }
 
 // ---- pins -------------------------------------------------------------

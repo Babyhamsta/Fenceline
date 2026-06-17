@@ -80,39 +80,74 @@ flowchart LR
 
 ## The content model (Tier 3)
 
-A 1.3 MB classifier that reads a page's rendered text *after* it loads and blocks
-it if it confidently matches a filtered category the lists missed. The lists stay
-primary; this is the async backstop that generalises to sites nobody has listed
-yet.
+A **hybrid classifier** that reads a page *after* it loads and blocks it if it
+confidently matches a filtered category (`adult`, `gambling`, `games`,
+`proxy-bypass`) the lists missed. The lists stay primary; this is the async
+backstop that generalises to sites nobody has listed yet. It pairs a fast text
+model with a small tree model over the page's *structure*, because text alone
+can't tell a page that **IS** a proxy from a page **ABOUT** proxies — same words,
+same score. A Wikipedia "Proxy server" article and a working web proxy are
+identical to a bag-of-words; what separates them is that the article never
+instantiates a proxy's functional element (a URL box, an embedded-URL path).
 
-**What it sees.** A content script extracts the same fields the model trained on —
-the page title, meta description, and the first few hundred words of visible body
-text (data URIs stripped, capped). It also scans the rendered content of in-page
-"browser" proxies that draw a real site into an `about:blank` document, which
-URL-based filtering can't see.
+**What it sees.** A content script (`extension/content/structural-features.js`,
+the *one* extractor shared with the offline scraper so train/infer vectors are
+identical by construction) derives a fixed numeric vector locally — nothing
+leaves the device:
 
-**How it scores.** Words and character 3-/4-grams are hashed with FNV-1a into
-65,536 signed buckets — the "hashing trick", so there's no vocabulary file and
-memory is fixed — then run through a 5-class multinomial logistic regression
-(`clean`, `adult`, `gambling`, `games`, `proxy-bypass`). A page is blocked only
-if a *blocked* class clears a 0.90 confidence threshold; otherwise it passes.
-Tuned so the clean class false-positives under 1% at that threshold, with
-blocked-class precision in the high 0.9s on held-out evaluation.
+- **Text:** title, meta description, and the first few hundred words of visible
+  body text (data URIs stripped, capped). Also reads in-page "browser" proxies
+  that draw a real site into an `about:blank` document, which URL filtering can't
+  see.
+- **URL/host:** length, path depth, host/path entropy, digit ratio, cheap-TLD
+  flag, embedded-URL-in-path, per-category keyword hits.
+- **Structure:** tag histogram, DOM depth, link density, paragraph count,
+  third-party-script ratio, iframe/canvas/video composition, payment/password
+  fields, and the "is-vs-about" functional-element flags (a URL box, a dominant
+  game canvas, a casino iframe, an age gate).
+- **Resource fingerprints:** known adult-ad / gambling-affiliate / crypto-widget
+  hosts, CGI-proxy software markers (Glype/CGIProxy/PHProxy), gambling license
+  seals.
 
-**Why it's trustworthy.** The vectorizer math is byte-identical in Python
-(training) and JavaScript (the device) — the same hash produces the same
-features, so the numbers in the eval table are exactly what runs on the
-Chromebook, with no serialization gap to hide a regression. Cost on-device is
-~4 µs per page and ~1.3 MB resident. The model is versioned like the lists
-(`meta.json`) and pulled on update; a baseline ships inside the extension so a
-fresh install is never unprotected.
+**How it scores (two stages, then a hybrid rule).**
+1. **Text model** — words and char 3-/4-grams hashed with FNV-1a into 65,536
+   signed buckets (the "hashing trick" — no vocabulary file, fixed memory), run
+   through a 5-class multinomial logistic regression. ~1.3 MB, microseconds.
+2. **Fusion model** — a gradient-boosted decision tree (`fusion.json`) over the
+   5 text scores **plus** the ~60 structural/URL/fingerprint scalars. A tree
+   natively models the conjunction text can't: *proxy words AND a URL box AND not
+   prose ⇒ block; proxy words AND article structure ⇒ clean.*
+3. **Hybrid decision** — the fusion model is the primary call (it learned
+   is-vs-about, so it cleans articles the text model would block). The text model
+   is a **high-recall backstop** for true positives the tree misses (a logged-out
+   casino landing page, an atypical games portal) — but a structural **article
+   guard** (`prose-rescue.js`: low link-density + real paragraphs + no functional
+   element) suppresses the backstop on genuine articles, so the text model's
+   vocabulary false-positives never leak through. Search-result pages are exempt
+   upstream (a SERP is structurally a link hub and scores on whatever the student
+   typed). Per-category thresholds tuned for ~1.5% clean false-positives.
 
-**How it's built.** Trained on rendered text from tens of thousands of live
-sites — sampled popular-first from the public blocklist domains for the filtered
-classes, and from the Tranco top sites for `clean`, split leak-free by registrable
-domain. We publish the **scraper, training/eval scripts, and the weights**; we do
-**not** publish the scraped pages (third-party content). See
-[`classifier/README.md`](classifier/README.md) to reproduce.
+**Why it's trustworthy.** The whole pipeline is parity-checked end to end:
+the vectorizer and the **tree walk are byte-identical in Python (training) and
+JavaScript (device)** — `export_fusion.py` asserts the exported trees reproduce
+sklearn's `predict_proba` exactly, and `test_fusion_parity.mjs` asserts the JS
+interpreter matches the Python reference, so the chain *sklearn ≡ Python ≡ JS*
+holds and the eval numbers are exactly what runs on the Chromebook. Cost is a few
+ms per page; assets (~1.3 MB text + ~3 MB tree) are pulled on version change with
+a SHA-256 check, and a baseline ships inside the extension so a fresh install is
+never unprotected. If the tree fails to load, `decide()` degrades to text-only.
+
+**How it's built.** Trained on rendered text + structure from ~50k live sites
+(blocklist domains for the filtered classes, Tranco for `clean`), split leak-free
+by registrable domain. The decisive technique is **hard-negative mining**: pages
+with a category's *vocabulary* but a clean page's *structure* — Wikipedia topic
+articles, news, VPN/gambling coverage, sex-ed, interactive education — are mined
+into the training set so the tree learns to lean on structure. Policy is
+**block-by-category-aggressively, allowlist the exceptions**: VPN vendor/download
+pages and game portals are blocked (they're bypass tools / games), with the
+allowlist as the escape hatch. We publish the **scraper, training/eval/export
+scripts, and the weights**; we do **not** publish the scraped pages (third-party
+content). See [`classifier/README.md`](classifier/README.md) to reproduce.
 
 ## Proxy & evasion detection (Tiers 3b + 4)
 
