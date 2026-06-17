@@ -24,24 +24,64 @@
 // These are FEATURE INPUTS, not a block boundary — false matches only add noise
 // a tree can down-weight, they never block on their own.
 const FP_ADULT_ADNET = [
-  "exoclick", "juicyads", "trafficjunky", "eroadvertising", "adxxx",
-  "trafficstars", "popads", "adsterra", "plugrush", "hilltopads",
-  "clickadu", "tsyndicate", "adnium", "ero-advertising"
+  "exoclick",
+  "juicyads",
+  "trafficjunky",
+  "eroadvertising",
+  "adxxx",
+  "trafficstars",
+  "popads",
+  "adsterra",
+  "plugrush",
+  "hilltopads",
+  "clickadu",
+  "tsyndicate",
+  "adnium",
+  "ero-advertising"
 ];
 const FP_GAMBLING_AFFILIATE = [
-  "income-access", "incomeaccess", "raventrack", "netrefer", "myaffiliates",
-  "cellxpert", "smartico", "betradar", "sportradar", "everymatrix",
-  "softswiss", "pragmaticplay", "evolution", "1xbet", "betano"
+  "income-access",
+  "incomeaccess",
+  "raventrack",
+  "netrefer",
+  "myaffiliates",
+  "cellxpert",
+  "smartico",
+  "betradar",
+  "sportradar",
+  "everymatrix",
+  "softswiss",
+  "pragmaticplay",
+  "evolution",
+  "1xbet",
+  "betano"
 ];
 const FP_CRYPTO_WIDGET = [
-  "coinbase-commerce", "coingate", "nowpayments", "cryptomus", "coinpayments",
-  "binance", "metamask", "walletconnect", "web3modal", "moonpay", "wert.io"
+  "coinbase-commerce",
+  "coingate",
+  "nowpayments",
+  "cryptomus",
+  "coinpayments",
+  "binance",
+  "metamask",
+  "walletconnect",
+  "web3modal",
+  "moonpay",
+  "wert.io"
 ];
 // CGI-proxy software tells (Glype/CGIProxy/PHProxy). Matched against page text +
 // inline markup, lowercased. base64-destination handling stays in url_embeds_url.
 const FP_PROXY_MARKER = [
-  "powered by glype", "glype", "cgiproxy", "phproxy", "powered by php-proxy",
-  "miniproxy", "php-proxy", "x-proxy", "/browse.php?u=", "/nph-proxy"
+  "powered by glype",
+  "glype",
+  "cgiproxy",
+  "phproxy",
+  "powered by php-proxy",
+  "miniproxy",
+  "php-proxy",
+  "x-proxy",
+  "/browse.php?u=",
+  "/nph-proxy"
 ];
 
 function fencelineExtractStructural() {
@@ -106,7 +146,9 @@ function fencelineExtractStructural() {
   const urlFeatures = {
     url_length: urlLength,
     path_depth: locPath.split("/").filter(Boolean).length,
-    query_param_count: locSearch ? locSearch.replace(/^\?/, "").split("&").filter(Boolean).length : 0,
+    query_param_count: locSearch
+      ? locSearch.replace(/^\?/, "").split("&").filter(Boolean).length
+      : 0,
     url_digit_ratio: urlLength ? urlDigits / urlLength : 0,
     url_hyphen_count: (locHref.match(/-/g) || []).length,
     url_pct_encoded_count: (locHref.match(/%[0-9a-fA-F]{2}/g) || []).length,
@@ -116,13 +158,49 @@ function fencelineExtractStructural() {
     is_ip_literal_host: /^\d{1,3}(\.\d{1,3}){3}$/.test(locHost) ? 1 : 0,
     // Cheap/abused TLDs carry signal (doc). Boolean flag keeps the vector numeric
     // and fixed-length; a full categorical can be added offline if it pays.
-    is_cheap_tld: /\.(xyz|top|click|club|online|site|live|fun|gq|cf|ml|tk|ga|buzz|rest|cyou)$/i.test(locHost) ? 1 : 0,
+    is_cheap_tld:
+      /\.(xyz|top|click|club|online|site|live|fun|gq|cf|ml|tk|ga|buzz|rest|cyou)$/i.test(locHost)
+        ? 1
+        : 0,
     // per-category keyword hits in the full URL (lowercased) — strongest cheap
     // signal on thin/blocked pages where the DOM collapses to nothing.
-    kw_url_proxy: countMarkers(locHref.toLowerCase(), ["proxy", "unblock", "unblocked", "bypass", "vpn", "hidester", "croxy"]),
-    kw_url_gambling: countMarkers(locHref.toLowerCase(), ["casino", "bet", "slot", "poker", "gambl", "wager", "roulette", "blackjack"]),
-    kw_url_adult: countMarkers(locHref.toLowerCase(), ["porn", "xxx", "sex", "adult", "nude", "cam", "escort", "hentai"]),
-    kw_url_games: countMarkers(locHref.toLowerCase(), ["game", "play", "unblocked", "io", "arcade", "html5"])
+    kw_url_proxy: countMarkers(locHref.toLowerCase(), [
+      "proxy",
+      "unblock",
+      "unblocked",
+      "bypass",
+      "vpn",
+      "hidester",
+      "croxy"
+    ]),
+    kw_url_gambling: countMarkers(locHref.toLowerCase(), [
+      "casino",
+      "bet",
+      "slot",
+      "poker",
+      "gambl",
+      "wager",
+      "roulette",
+      "blackjack"
+    ]),
+    kw_url_adult: countMarkers(locHref.toLowerCase(), [
+      "porn",
+      "xxx",
+      "sex",
+      "adult",
+      "nude",
+      "cam",
+      "escort",
+      "hentai"
+    ]),
+    kw_url_games: countMarkers(locHref.toLowerCase(), [
+      "game",
+      "play",
+      "unblocked",
+      "io",
+      "arcade",
+      "html5"
+    ])
   };
 
   // ---- prose vs. chrome structure ------------------------------------------

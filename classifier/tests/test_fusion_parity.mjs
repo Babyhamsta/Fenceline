@@ -36,25 +36,58 @@ const RECORDS = [
     title: "Cool Math Games",
     meta: "free online games",
     text: "play free online games arcade racing puzzle multiplayer strategy",
-    structural: { link_density: 0.78, paragraph_count: 55, tag_a: 244, tag_img: 72, internal_link_ratio: 0.9, dom_node_count: 4285, iframe_count: 3, iframe_cross_origin_count: 1, kw_url_games: 1, canvas_area_fraction: 0 }
+    structural: {
+      link_density: 0.78,
+      paragraph_count: 55,
+      tag_a: 244,
+      tag_img: 72,
+      internal_link_ratio: 0.9,
+      dom_node_count: 4285,
+      iframe_count: 3,
+      iframe_cross_origin_count: 1,
+      kw_url_games: 1,
+      canvas_area_fraction: 0
+    }
   },
   {
     title: "Proxy server - Wikipedia",
     meta: "",
     text: "a proxy server is a server application that acts as an intermediary unblock vpn",
-    structural: { link_density: 0.18, paragraph_count: 60, has_url_like_input: false, url_embeds_url: false, has_dominant_canvas: false, fp_proxy_marker_count: 3, dom_node_count: 5000, tag_a: 800 }
+    structural: {
+      link_density: 0.18,
+      paragraph_count: 60,
+      has_url_like_input: false,
+      url_embeds_url: false,
+      has_dominant_canvas: false,
+      fp_proxy_marker_count: 3,
+      dom_node_count: 5000,
+      tag_a: 800
+    }
   },
   {
     title: "Online Casino Sportsbook",
     meta: "bet now",
     text: "casino sportsbook poker deposit bonus real money slots blackjack roulette",
-    structural: { link_density: 0.28, paragraph_count: 5, has_gambling_license_seal: true, has_large_xorigin_iframe: false, fp_gambling_affiliate_count: 0, dom_node_count: 1200 }
+    structural: {
+      link_density: 0.28,
+      paragraph_count: 5,
+      has_gambling_license_seal: true,
+      has_large_xorigin_iframe: false,
+      fp_gambling_affiliate_count: 0,
+      dom_node_count: 1200
+    }
   },
   {
     title: "BBC News",
     meta: "world news",
     text: "breaking world news politics business technology health science sports",
-    structural: { link_density: 0.55, paragraph_count: 20, tag_a: 300, dom_node_count: 3000, internal_link_ratio: 0.8 }
+    structural: {
+      link_density: 0.55,
+      paragraph_count: 20,
+      tag_a: 300,
+      dom_node_count: 3000,
+      internal_link_ratio: 0.8
+    }
   }
 ];
 

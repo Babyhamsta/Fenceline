@@ -238,7 +238,9 @@ export function decide(text, structural, thresholdOverride) {
 
   const thrFusion = thresholdOverride != null ? thresholdOverride : (META.thr_fusion ?? 0.97);
   const thrText =
-    thresholdOverride != null ? Math.max(META.thr_text ?? 0.89, thresholdOverride) : (META.thr_text ?? 0.89);
+    thresholdOverride != null
+      ? Math.max(META.thr_text ?? 0.89, thresholdOverride)
+      : (META.thr_text ?? 0.89);
 
   const fScores = fusionScores(textScores, structural);
   const fBest = topBlocked(fScores, clean);
