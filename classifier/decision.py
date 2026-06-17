@@ -33,7 +33,9 @@ def prose_rescue(category: str, s: Optional[Dict]) -> bool:
         return False
     if category == "adult" and s.get("has_video_player"):
         return False
-    if category == "gambling" and s.get("has_large_xorigin_iframe"):
+    if category == "gambling" and (
+        s.get("has_large_xorigin_iframe") or s.get("has_gambling_license_seal")
+    ):
         return False
     return True
 

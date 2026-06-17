@@ -38,6 +38,14 @@ _STRUCT_FLOATS = (
     "canvas_area_fraction",
     "largest_iframe_area_fraction",
     "script_host_entropy",
+    # url/host lexical
+    "url_digit_ratio",
+    "host_entropy",
+    "path_entropy",
+    # script composition + media density
+    "third_party_script_ratio",
+    "inline_script_ratio",
+    "image_to_text_ratio",
 )
 _STRUCT_INTS = (
     "paragraph_count",
@@ -48,6 +56,41 @@ _STRUCT_INTS = (
     "button_count",
     "select_count",
     "iframe_count",
+    "iframe_cross_origin_count",
+    # url/host lexical (counts + 0/1 flags emitted numerically by the JS)
+    "url_length",
+    "path_depth",
+    "query_param_count",
+    "url_hyphen_count",
+    "url_pct_encoded_count",
+    "subdomain_depth",
+    "is_ip_literal_host",
+    "is_cheap_tld",
+    "kw_url_proxy",
+    "kw_url_gambling",
+    "kw_url_adult",
+    "kw_url_games",
+    # tag histogram
+    "tag_div",
+    "tag_iframe",
+    "tag_script",
+    "tag_video",
+    "tag_canvas",
+    "tag_embed",
+    "tag_object",
+    "tag_form",
+    "tag_input",
+    "tag_a",
+    "tag_img",
+    "max_dom_depth",
+    # script composition + payment/credential + fingerprints
+    "popup_indicator_count",
+    "form_count",
+    "password_field_count",
+    "fp_adult_adnet_count",
+    "fp_gambling_affiliate_count",
+    "fp_crypto_widget_count",
+    "fp_proxy_marker_count",
 )
 _STRUCT_BOOLS = (
     "has_url_like_input",
@@ -57,6 +100,8 @@ _STRUCT_BOOLS = (
     "iframe_cross_origin",
     "has_large_xorigin_iframe",
     "has_age_gate",
+    "has_payment_field",
+    "has_gambling_license_seal",
 )
 
 

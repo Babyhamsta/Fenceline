@@ -164,8 +164,23 @@ async function syncModel(cfg, meta) {
   if (meta.model.sha256 && (await digestHex(coefBuf)) !== meta.model.sha256) {
     throw new Error("model hash mismatch — refusing to apply"); // caught upstream; keeps current model
   }
-  await storeModel(coefBuf, modelMeta);
-  console.log(`[fenceline] synced content model v${modelMeta.version}`);
+  // Optional Stage-2 fusion model. Pulled atomically with the text weights; a
+  // bad hash drops it and ships text-only rather than applying a corrupt tree.
+  let fusion = null;
+  if (meta.model.fusionFile) {
+    try {
+      const fusionBuf = await fetchBuf(`${cfg.listBaseUrl}/${meta.model.fusionFile}`);
+      if (!meta.model.fusionSha256 || (await digestHex(fusionBuf)) === meta.model.fusionSha256) {
+        fusion = JSON.parse(new TextDecoder().decode(fusionBuf));
+      } else {
+        console.warn("[fenceline] fusion hash mismatch — applying text-only");
+      }
+    } catch (e) {
+      console.warn("[fenceline] fusion fetch failed — applying text-only", e.message);
+    }
+  }
+  await storeModel(coefBuf, modelMeta, fusion);
+  console.log(`[fenceline] synced content model v${modelMeta.version}${fusion ? " +fusion" : ""}`);
   return modelMeta.version;
 }
 

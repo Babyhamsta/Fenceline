@@ -1,5 +1,5 @@
 {
-  "version": "e03d2cefad5ac261",
+  "version": "75f0aa25501ab3f8",
   "vectorizer": "fnv-hash-v1",
   "dims": 65536,
   "classes": [
@@ -10,12 +10,16 @@
     "proxy-bypass"
   ],
   "intercept": [
-    -0.6003439426422119,
-    0.45084360241889954,
-    -0.02829134650528431,
-    -0.13778269290924072,
-    0.3155743479728699
+    -0.8928287625312805,
+    0.21323361992835999,
+    0.08608176559209824,
+    0.2841654419898987,
+    0.309347927570343
   ],
   "clean_label": "clean",
-  "block_threshold": 0.8
+  "block_threshold": 0.8,
+  "model_kind": "hybrid-text-fusion",
+  "thr_fusion": 0.97,
+  "thr_text": 0.89,
+  "fusion_file": "fusion.json"
 }

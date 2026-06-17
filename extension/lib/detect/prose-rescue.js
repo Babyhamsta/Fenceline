@@ -43,6 +43,7 @@ export function proseRescue(category, s) {
   // per-category functional element present ⇒ it IS the thing, never rescue
   if (category === "proxy-bypass" && (s.url_embeds_url || s.has_url_like_input)) return false;
   if (category === "adult" && s.has_video_player) return false;
-  if (category === "gambling" && s.has_large_xorigin_iframe) return false;
+  if (category === "gambling" && (s.has_large_xorigin_iframe || s.has_gambling_license_seal))
+    return false;
   return true;
 }

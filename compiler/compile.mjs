@@ -402,6 +402,15 @@ async function main() {
       version: JSON.parse(modelMetaRaw.toString("utf8")).version,
       sha256: sha256(modelBin)
     };
+    // Stage-2 fusion GBDT (optional). Published next to the text weights and
+    // referenced so sync.js pulls it atomically with a model-version change.
+    if (existsSync(join(modelSrc, "fusion.json"))) {
+      const fusionRaw = readFileSync(join(modelSrc, "fusion.json"));
+      writeFileSync(join(DIST, "fusion.json"), fusionRaw);
+      meta.model.fusionFile = "fusion.json";
+      meta.model.fusionSha256 = sha256(fusionRaw);
+      console.log(`  fusion.json ${(fusionRaw.length / 1048576).toFixed(2)} MB`);
+    }
     console.log(
       `  model.bin ${(modelBin.length / 1048576).toFixed(2)} MB (v${meta.model.version})`
     );
