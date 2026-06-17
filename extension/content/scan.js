@@ -69,7 +69,8 @@
     // break the text scan.
     let structural = null;
     try {
-      if (typeof fencelineExtractStructural === "function") structural = fencelineExtractStructural();
+      if (typeof fencelineExtractStructural === "function")
+        structural = fencelineExtractStructural();
     } catch {
       structural = null;
     }

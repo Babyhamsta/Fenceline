@@ -226,10 +226,7 @@ section("detect/search-engine");
   ok(isSearchEngineSerp("search.yahoo.com", "/search?p=x".split("?")[0]), "yahoo search → exempt");
   // translate.google.com is a PROXY vector — exact-host match means it's NOT exempt.
   ok(!isSearchEngineSerp("translate.google.com", "/"), "translate.google.com → NOT exempt");
-  ok(
-    !isSearchEngineSerp("webcache.googleusercontent.com", "/"),
-    "google cache host → NOT exempt"
-  );
+  ok(!isSearchEngineSerp("webcache.googleusercontent.com", "/"), "google cache host → NOT exempt");
   // a non-SERP path on a search host isn't exempt (path-scoped).
   ok(!isSearchEngineSerp("www.google.com", "/maps"), "google /maps → NOT exempt");
   // unrelated host that merely has /search → not exempt.
