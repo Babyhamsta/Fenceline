@@ -87,7 +87,9 @@ async def _worker(p, work, label, out_fh, state) -> None:
             # iframe game structure the homepage lacks). Same label.
             if usable and INTERIOR > 0:
                 rng = random.Random(url)
-                for link in sample_interior_links(raw.get("links") or [], etld1(url), INTERIOR, rng):
+                for link in sample_interior_links(
+                    raw.get("links") or [], etld1(url), INTERIOR, rng
+                ):
                     raw_i = await render_on_context(ctx, link, TIMEOUT_MS, HARD_DEADLINE)
                     state["tried"] += 1
                     if raw_i is None:
@@ -99,9 +101,7 @@ async def _worker(p, work, label, out_fh, state) -> None:
                         state["kept"] += 1
             if state["tried"] % 50 == 0:
                 rate = state["tried"] / max(1e-9, time.perf_counter() - state["t0"])
-                print(
-                    f"  {state['kept']}/{state['tried']} usable ({rate:.1f}/s)", flush=True
-                )
+                print(f"  {state['kept']}/{state['tried']} usable ({rate:.1f}/s)", flush=True)
             served += 1
             if served % RECYCLE_EVERY == 0 or consec_fail >= FAIL_RECYCLE:
                 await _close_session(browser, ctx)
@@ -139,7 +139,9 @@ def main() -> None:
     ap.add_argument("--seeds", required=True)
     ap.add_argument("--label", default="clean")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--interior", type=int, default=0, help="sample N interior pages per usable seed")
+    ap.add_argument(
+        "--interior", type=int, default=0, help="sample N interior pages per usable seed"
+    )
     args = ap.parse_args()
     INTERIOR = args.interior
     asyncio.run(_amain(ROOT / args.seeds, args.label, ROOT / args.out))

@@ -17,7 +17,9 @@ from classifier.vectorize import DIMS, vectorize
 MODEL = Path(__file__).resolve().parent.parent / "extension" / "model"
 META = json.loads((MODEL / "model-meta.json").read_text(encoding="utf-8"))
 CLASSES = META["classes"]
-COEF = np.frombuffer((MODEL / "model.bin").read_bytes(), dtype=np.float32).reshape(len(CLASSES), DIMS)
+COEF = np.frombuffer((MODEL / "model.bin").read_bytes(), dtype=np.float32).reshape(
+    len(CLASSES), DIMS
+)
 INTERCEPT = np.array(META["intercept"], dtype=np.float32)
 FUSION = json.loads((MODEL / "fusion.json").read_text(encoding="utf-8"))
 

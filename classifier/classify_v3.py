@@ -21,7 +21,7 @@ import numpy as np
 from classifier.decision import is_search_engine_url, prose_rescue
 from classifier.extract import build_record, doc
 from classifier.render import render
-from classifier.vectorize import DIMS, vectorize
+from classifier.vectorize import vectorize
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "dist_v3"
@@ -60,7 +60,11 @@ SUITE = [
     ("https://www.actionnetwork.com/", "clean", "held-out sports-betting NEWS"),
     ("https://www.gameinformer.com/", "clean", "held-out gaming news"),
     ("https://en.wikipedia.org/wiki/Online_casino", "clean", "held-out wiki gambling article"),
-    ("https://en.wikipedia.org/wiki/Web_proxy_auto-discovery_protocol", "clean", "held-out wiki proxy article"),
+    (
+        "https://en.wikipedia.org/wiki/Web_proxy_auto-discovery_protocol",
+        "clean",
+        "held-out wiki proxy article",
+    ),
     ("https://en.wikipedia.org/wiki/Sex_education", "clean", "held-out wiki adult-topic article"),
     # --- additional true positives -> must BLOCK -------------------------------
     ("https://www.4everproxy.com/", "proxy-bypass", "functional web proxy"),

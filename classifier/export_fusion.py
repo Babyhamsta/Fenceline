@@ -27,9 +27,9 @@ from pathlib import Path
 
 import numpy as np
 
+from classifier.extract import doc
 from classifier.train_gbdt import ENG, eng_vec, load
 from classifier.vectorize import DIMS, vectorize
-from classifier.extract import doc
 
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / "dist_v3"
@@ -50,15 +50,17 @@ def export_trees(clf):
         for tree in iteration:  # one tree per class
             nodes = []
             for n in tree.nodes:
-                nodes.append([
-                    int(n["feature_idx"]),
-                    float(n["num_threshold"]),
-                    int(n["left"]),
-                    int(n["right"]),
-                    float(n["value"]),
-                    int(n["is_leaf"]),
-                    int(n["missing_go_to_left"]),
-                ])
+                nodes.append(
+                    [
+                        int(n["feature_idx"]),
+                        float(n["num_threshold"]),
+                        int(n["left"]),
+                        int(n["right"]),
+                        float(n["value"]),
+                        int(n["is_leaf"]),
+                        int(n["missing_go_to_left"]),
+                    ]
+                )
             trees.append(nodes)
         iters.append(trees)
     return iters
@@ -128,8 +130,8 @@ def main() -> None:
     fusion = {
         "classes": classes,
         "baseline": baseline,
-        "n_text": len(classes),          # first N features are text probs (class order)
-        "engineered": ENG,               # remaining features, in this exact order
+        "n_text": len(classes),  # first N features are text probs (class order)
+        "engineered": ENG,  # remaining features, in this exact order
         "thr_fusion": THR_FUSION,
         "thr_text": THR_TEXT,
         "trees": iters,
@@ -142,7 +144,9 @@ def main() -> None:
     cfg = json.loads((ROOT / "poc.json").read_text(encoding="utf-8"))
     # text model already aligned to `classes`? sklearn LR classes_ order:
     coef_out = np.vstack([coef[tclasses.index(c)] for c in classes]).astype(np.float32)
-    intercept_out = np.array([float(intercept[tclasses.index(c)]) for c in classes], dtype=np.float32)
+    intercept_out = np.array(
+        [float(intercept[tclasses.index(c)]) for c in classes], dtype=np.float32
+    )
     binblob = coef_out.tobytes()
     (DIST / "model.bin").write_bytes(binblob)
     version = hashlib.sha256(binblob + blob).hexdigest()[:16]

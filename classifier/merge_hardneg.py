@@ -56,7 +56,9 @@ def main() -> None:
     by_label = collections.Counter(r["label"] for r in extra)
     print(f"extra: {before} -> dropped {dropped} (val/test leak) -> deduped to {len(extra)}")
     print(f"  injected by label: {dict(by_label)}")
-    print(f"train: {len(train)} + {len(extra)} = {len(out)}  (val/test pristine: {len(val)}/{len(test)})")
+    print(
+        f"train: {len(train)} + {len(extra)} = {len(out)}  (val/test pristine: {len(val)}/{len(test)})"
+    )
 
 
 if __name__ == "__main__":
