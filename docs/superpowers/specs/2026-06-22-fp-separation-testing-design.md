@@ -1,6 +1,8 @@
 # FP-Separation Testing — Design
 
-> Status: approved design, pre-implementation. Goal: in-depth testing of the
+> Status: IMPLEMENTED (2026-06-22) on branch `test/fp-separation-hardening`. All
+> three workstreams shipped + wired into CI; 5 documented findings quarantined in
+> `classifier/templates/exploratory/`. Goal: in-depth testing of the
 > classifier, pin gate, behavioral detectors, and JS↔Python parity so that
 > false positives and near-misses ("a page ABOUT X" vs "a page that IS X") are
 > caught automatically and can't regress silently.
