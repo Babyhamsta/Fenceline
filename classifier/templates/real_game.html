@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Play Tower Blaster - Free Online Game</title>
+    <meta name="description" content="Play Tower Blaster, a free browser game. Click to start." />
+  </head>
+  <body>
+    <main>
+      <h1>Tower Blaster</h1>
+      <canvas id="game" width="960" height="600">Your browser does not support canvas.</canvas>
+      <p>Use the arrow keys to move and space to fire. Click the canvas to start.</p>
+      <script>
+        const c = document.getElementById("game");
+        const ctx = c.getContext("2d");
+        ctx.fillStyle = "#101820";
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.fillStyle = "#7cf";
+        ctx.fillRect(440, 540, 80, 40);
+      </script>
+    </main>
+  </body>
+</html>

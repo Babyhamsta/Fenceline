@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Secure Browser - Unblock Everything</title>
+    <meta name="description" content="A full-screen in-browser proxy that unblocks any website behind a school or work filter." />
+  </head>
+  <body>
+    <main>
+      <h1>Secure Browser</h1>
+      <canvas id="screen" width="1200" height="700">Loading secure session…</canvas>
+      <p>Loading the encrypted browsing session. Unblock any site.</p>
+      <script>
+        const c = document.getElementById("screen");
+        const ctx = c.getContext("2d");
+        ctx.fillStyle = "#0b132b";
+        ctx.fillRect(0, 0, c.width, c.height);
+      </script>
+    </main>
+  </body>
+</html>
