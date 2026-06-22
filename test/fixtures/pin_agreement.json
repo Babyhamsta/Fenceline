@@ -1,0 +1,119 @@
+{
+  "_doc": "Shared pin-gate truth table. The device pin decision (extension/lib/pins.js:pinWorthy) MUST equal the offline training router (classifier/fp_audit.py:has_functional_element) on every row, or the host the device pins diverges from what the corpus curation treats as a real instance. Read by test/detect.mjs (JS) and classifier/tests/test_pin_agreement.py (Python). pin=true means 'the page IS an instance -> pin its host'.",
+  "rows": [
+    {
+      "name": "proxy: embeds target URL in path",
+      "category": "proxy-bypass",
+      "structural": { "url_embeds_url": true },
+      "pin": true
+    },
+    {
+      "name": "proxy: CGI software marker (glype)",
+      "category": "proxy-bypass",
+      "structural": { "fp_proxy_marker_count": 2, "paragraph_count": 3 },
+      "pin": true
+    },
+    {
+      "name": "proxy: thin landing with URL box",
+      "category": "proxy-bypass",
+      "structural": { "has_url_like_input": true, "paragraph_count": 1 },
+      "pin": true
+    },
+    {
+      "name": "proxy: article with site search box (paras>=5)",
+      "category": "proxy-bypass",
+      "structural": { "has_url_like_input": true, "paragraph_count": 14 },
+      "pin": false
+    },
+    {
+      "name": "proxy: full-canvas proxy (pin GAP - canvas not a proxy pin signal)",
+      "category": "proxy-bypass",
+      "structural": { "has_dominant_canvas": true, "paragraph_count": 1 },
+      "pin": false
+    },
+    {
+      "name": "proxy: forum discussion, no element",
+      "category": "proxy-bypass",
+      "structural": { "paragraph_count": 30, "link_density": 0.2 },
+      "pin": false
+    },
+    {
+      "name": "games: playable canvas",
+      "category": "games",
+      "structural": { "has_dominant_canvas": true },
+      "pin": true
+    },
+    {
+      "name": "games: iframe-embedded game (pin GAP - iframe not a games pin signal)",
+      "category": "games",
+      "structural": { "has_large_xorigin_iframe": true, "paragraph_count": 1 },
+      "pin": false
+    },
+    {
+      "name": "games: portal link-hub, no canvas",
+      "category": "games",
+      "structural": { "internal_link_ratio": 1.0, "link_density": 0.7, "paragraph_count": 1 },
+      "pin": false
+    },
+    {
+      "name": "games: article about games",
+      "category": "games",
+      "structural": { "paragraph_count": 10 },
+      "pin": false
+    },
+    {
+      "name": "adult: video player",
+      "category": "adult",
+      "structural": { "has_video_player": true },
+      "pin": true
+    },
+    {
+      "name": "adult: age gate only",
+      "category": "adult",
+      "structural": { "has_age_gate": true, "paragraph_count": 2 },
+      "pin": true
+    },
+    {
+      "name": "adult: sex-ed article",
+      "category": "adult",
+      "structural": { "paragraph_count": 20 },
+      "pin": false
+    },
+    {
+      "name": "gambling: casino license seal",
+      "category": "gambling",
+      "structural": { "has_gambling_license_seal": true },
+      "pin": true
+    },
+    {
+      "name": "gambling: payment field",
+      "category": "gambling",
+      "structural": { "has_payment_field": true },
+      "pin": true
+    },
+    {
+      "name": "gambling: large cross-origin bet iframe",
+      "category": "gambling",
+      "structural": { "has_large_xorigin_iframe": true },
+      "pin": true
+    },
+    {
+      "name": "gambling: news article",
+      "category": "gambling",
+      "structural": { "paragraph_count": 40 },
+      "pin": false
+    },
+    {
+      "name": "unknown category",
+      "category": "phishing",
+      "structural": { "has_video_player": true },
+      "pin": false
+    },
+    {
+      "name": "missing structural (fail safe)",
+      "category": "proxy-bypass",
+      "structural": {},
+      "pin": false
+    }
+  ]
+}

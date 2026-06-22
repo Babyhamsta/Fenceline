@@ -53,7 +53,12 @@ const CASES = [
     name: "fusion-block: playable game (dominant canvas)",
     url: "https://gamesite.example/play",
     text: "play free online arcade racing puzzle game click to start",
-    structural: { has_dominant_canvas: true, canvas_area_fraction: 0.7, paragraph_count: 1, link_density: 0 }
+    structural: {
+      has_dominant_canvas: true,
+      canvas_area_fraction: 0.7,
+      paragraph_count: 1,
+      link_density: 0
+    }
   },
   {
     name: "text-backstop: thin web proxy (url box, no prose)",
@@ -71,7 +76,13 @@ const CASES = [
     text:
       "a proxy server is an intermediary between a client and the internet it forwards requests " +
       "organisations use proxies for caching access control and monitoring a reverse proxy balances load",
-    structural: { link_density: 0.2, paragraph_count: 8, has_url_like_input: false, url_embeds_url: false, has_dominant_canvas: false }
+    structural: {
+      link_density: 0.2,
+      paragraph_count: 8,
+      has_url_like_input: false,
+      url_embeds_url: false,
+      has_dominant_canvas: false
+    }
   },
   {
     name: "fusion-block: adult video player + age gate",
@@ -83,7 +94,12 @@ const CASES = [
     name: "fusion-block: casino (license seal + payment)",
     url: "https://casino.example/play",
     text: "play real money slots blackjack roulette deposit now welcome bonus licensed curacao gaming",
-    structural: { has_gambling_license_seal: true, has_payment_field: true, paragraph_count: 2, link_density: 0 }
+    structural: {
+      has_gambling_license_seal: true,
+      has_payment_field: true,
+      paragraph_count: 2,
+      link_density: 0
+    }
   },
   {
     name: "clean: neutral article",
@@ -106,7 +122,9 @@ function jsDecide(c) {
   }
   if (isSearchEngineSerp(host, path)) return { category: "clean", blocked: false, confidence: 0 };
   const r = decide(c.text, c.structural);
-  return r ? { category: r.category, blocked: true, confidence: r.confidence } : { category: "clean", blocked: false, confidence: 0 };
+  return r
+    ? { category: r.category, blocked: true, confidence: r.confidence }
+    : { category: "clean", blocked: false, confidence: 0 };
 }
 
 const pyOut = JSON.parse(
@@ -141,7 +159,9 @@ CASES.forEach((c, i) => {
   const catOk = js.category === py.category && js.blocked === py.blocked;
   const confOk = !js.blocked || Math.abs(js.confidence - py.confidence) < 1e-4;
   if (catOk && confOk) {
-    console.log(`  ok    ${c.name} -> ${js.category}${js.blocked ? "@" + js.confidence.toFixed(3) : ""} [${py.reason}]`);
+    console.log(
+      `  ok    ${c.name} -> ${js.category}${js.blocked ? "@" + js.confidence.toFixed(3) : ""} [${py.reason}]`
+    );
   } else {
     fail++;
     console.error(

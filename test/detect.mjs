@@ -14,6 +14,7 @@ import { isSearchEngineSerp } from "../extension/lib/detect/search-engine.js";
 import {
   isNoPinHost,
   pinnedHit,
+  pinWorthy,
   capPins,
   createPinStore,
   buildNoPinHosts,
@@ -21,6 +22,11 @@ import {
   PIN_CAP
 } from "../extension/lib/pins.js";
 import { createLastRealHostStore } from "../extension/lib/last-real-host.js";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
 
 let failures = 0;
 function ok(cond, msg) {
@@ -69,6 +75,44 @@ section("detect/proxy-url");
   );
   ok(!_decodesToUrl(btoa("not-a-url-payload-long-enough")), "_decodesToUrl(non-url) → false");
   ok(!_decodesToUrl("short"), "_decodesToUrl(too short) → false");
+
+  // --- additional near-misses: separate real proxies from legit URL-embedders ---
+  // http (not https) percent-encoded target → still a proxy.
+  ok(
+    looksLikeProxyUrl("https://prox.example/scramjet/http%3A%2F%2Fgamesito.com/play"),
+    "http%3A%2F%2F percent-encoded path → true"
+  );
+  // Ultraviolet URL-safe base64 (-/_ alphabet) on a /uv/service/ path → proxy.
+  const uvSafe = btoa("https://gamesito.com/index.html").replace(/\+/g, "-").replace(/\//g, "_");
+  ok(
+    looksLikeProxyUrl(`https://prox.example/uv/service/${uvSafe}`),
+    "Ultraviolet url-safe base64 path → true"
+  );
+  // More legit reader/archival/CDN services that embed the target URL PLAINLY in
+  // the path — all documented FP shapes, all must stay false.
+  ok(
+    !looksLikeProxyUrl("https://archive.ph/newest/https://target.com/x"),
+    "archive.ph plain → false"
+  );
+  ok(
+    !looksLikeProxyUrl("https://outline.com/https://target.com/article"),
+    "outline.com plain → false"
+  );
+  ok(
+    !looksLikeProxyUrl("https://res.cloudinary.com/demo/image/fetch/https://target.com/a.jpg"),
+    "cloudinary image/fetch plain → false"
+  );
+  ok(
+    !looksLikeProxyUrl("https://12ft.io/proxy?q=https://target.com"),
+    "12ft.io ?q= target → false"
+  );
+  // The legit pattern: target carried as a QUERY param, never a path segment.
+  ok(
+    !looksLikeProxyUrl("https://translate.example/?u=https%3A%2F%2Ftarget.com"),
+    "target in ?query (not path) → false"
+  );
+  // A bare host / homepage with no embedded target → false.
+  ok(!looksLikeProxyUrl("https://cherrion.top/"), "proxy homepage, no target in path → false");
 }
 
 // ---- glyph-cipher -----------------------------------------------------
@@ -231,6 +275,37 @@ section("detect/search-engine");
   ok(!isSearchEngineSerp("www.google.com", "/maps"), "google /maps → NOT exempt");
   // unrelated host that merely has /search → not exempt.
   ok(!isSearchEngineSerp("evil.example", "/search"), "non-engine /search → NOT exempt");
+
+  // --- additional path/host boundaries ---
+  // Startpage's several SERP mount points are all exempt.
+  ok(isSearchEngineSerp("www.startpage.com", "/sp/search"), "startpage /sp/search → exempt");
+  ok(isSearchEngineSerp("startpage.com", "/do/dsearch"), "startpage /do/dsearch → exempt");
+  ok(isSearchEngineSerp("www.ecosia.org", "/search"), "ecosia /search → exempt");
+  ok(isSearchEngineSerp("yandex.com", "/search"), "yandex /search → exempt");
+  // A sub-path UNDER an exempt prefix is still exempt (/search/...)...
+  ok(isSearchEngineSerp("www.google.com", "/search/foo"), "google /search/foo sub-path → exempt");
+  // ...but a longer SIBLING that merely starts with the same letters is NOT.
+  ok(!isSearchEngineSerp("www.google.com", "/searchx"), "google /searchx sibling → NOT exempt");
+  // ddg /lite SERP is exempt; its homepage too.
+  ok(isSearchEngineSerp("duckduckgo.com", "/lite"), "ddg /lite → exempt");
+  // Host match is case-insensitive (sw.js may hand us a raw hostname).
+  ok(isSearchEngineSerp("GOOGLE.COM", "/search"), "GOOGLE.COM uppercase host → exempt");
+  // Bing image vertical isn't a SERP path → not exempt (path-scoped).
+  ok(!isSearchEngineSerp("www.bing.com", "/images"), "bing /images → NOT exempt");
+}
+
+// ---- pins: JS↔Python pin-gate agreement -------------------------------
+// The device pin decision (pinWorthy) and the offline training router
+// (classifier/fp_audit.py:has_functional_element) must agree on every row of the
+// shared fixture, or the host the device blanket-blocks diverges from what the
+// corpus curation treats as a real instance. The Python half asserts the same
+// table in classifier/tests/test_pin_agreement.py.
+section("pins: JS↔Python pin-gate agreement (shared fixture)");
+{
+  const fx = JSON.parse(readFileSync(join(HERE, "fixtures", "pin_agreement.json"), "utf8"));
+  for (const r of fx.rows) {
+    ok(pinWorthy(r.category, r.structural) === r.pin, `pinWorthy: ${r.name} → ${r.pin}`);
+  }
 }
 
 // ---- pins -------------------------------------------------------------
@@ -266,6 +341,36 @@ section("lib/pins");
     "pinnedHit prefers most-specific suffix"
   );
   ok(pinnedHit("nothing.here", p1) === null, "pinnedHit miss → null");
+
+  // pinWorthy: pin the host only when the page IS an instance (functional
+  // element), never when it merely DISCUSSES the topic. This is the site-agnostic
+  // guard against one false positive blanketing a whole multi-tenant origin.
+  ok(
+    !pinWorthy("proxy-bypass", { has_url_like_input: true, paragraph_count: 14 }),
+    "pinWorthy: Quora-style 'how to bypass' Q&A (search box + prose) → no pin"
+  );
+  ok(
+    !pinWorthy("proxy-bypass", { paragraph_count: 30 }),
+    "pinWorthy: forum/blog discussing proxies (no element) → no pin"
+  );
+  ok(
+    pinWorthy("proxy-bypass", { url_embeds_url: true }),
+    "pinWorthy: real web proxy (embeds target URL) → pin"
+  );
+  ok(
+    pinWorthy("proxy-bypass", { has_url_like_input: true, paragraph_count: 1 }),
+    "pinWorthy: thin proxy landing (URL box, no prose) → pin"
+  );
+  ok(pinWorthy("adult", { has_video_player: true }), "pinWorthy: adult video player → pin");
+  ok(!pinWorthy("adult", { paragraph_count: 20 }), "pinWorthy: article about porn → no pin");
+  ok(
+    pinWorthy("gambling", { has_gambling_license_seal: true }),
+    "pinWorthy: casino license seal → pin"
+  );
+  ok(!pinWorthy("gambling", { paragraph_count: 40 }), "pinWorthy: casino NEWS article → no pin");
+  ok(pinWorthy("games", { has_dominant_canvas: true }), "pinWorthy: playable game canvas → pin");
+  ok(!pinWorthy("games", { paragraph_count: 10 }), "pinWorthy: article about games → no pin");
+  ok(!pinWorthy("proxy-bypass", undefined), "pinWorthy: missing structural → no pin (fail safe)");
 
   // createPinStore against a fake storage area: write-through, dedupe, no-pin skip.
   function fakeStorage(initial = {}) {
