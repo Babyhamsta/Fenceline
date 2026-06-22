@@ -88,6 +88,47 @@ const RECORDS = [
       dom_node_count: 3000,
       internal_link_ratio: 0.8
     }
+  },
+  {
+    title: "Adult Video Tube",
+    meta: "watch now",
+    text: "watch explicit adult videos nsfw porn must be 18 adults only age verification",
+    structural: {
+      has_video_player: true,
+      has_age_gate: true,
+      paragraph_count: 3,
+      link_density: 0,
+      tag_video: 1,
+      image_to_text_ratio: 0.4,
+      fp_adult_adnet_count: 1
+    }
+  },
+  {
+    title: "Playable Game",
+    meta: "free online game",
+    text: "play tower blaster arrow keys to move space to fire click the canvas to start",
+    structural: {
+      has_dominant_canvas: true,
+      canvas_area_fraction: 0.63,
+      tag_canvas: 1,
+      paragraph_count: 1,
+      link_density: 0,
+      dom_node_count: 60
+    }
+  },
+  {
+    title: "Full-canvas proxy",
+    meta: "unblock everything",
+    text: "secure browser unblock any site encrypted browsing session proxy",
+    structural: {
+      has_dominant_canvas: true,
+      canvas_area_fraction: 1.0,
+      has_url_like_input: false,
+      url_embeds_url: false,
+      paragraph_count: 1,
+      link_density: 0,
+      kw_url_proxy: 1
+    }
   }
 ];
 

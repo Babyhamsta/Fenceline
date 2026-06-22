@@ -55,6 +55,16 @@ export async function storeModel(coefBuf, meta, fusion) {
   if (fusion) setFusion(fusion);
 }
 
+// Test seam: load model state synchronously from in-memory artifacts, bypassing
+// IndexedDB/fetch so decide()/classify() can run in plain Node (parity tests).
+// Mirrors storeModel's state writes without persistence — the browser never
+// calls this. Parallels fusion.js:setFusion.
+export function _loadModelForTest(coefBuf, meta, fusion) {
+  COEF = new Float32Array(coefBuf);
+  META = meta;
+  if (fusion) setFusion(fusion);
+}
+
 export async function getStoredModelVersion() {
   try {
     const db = await idb();
