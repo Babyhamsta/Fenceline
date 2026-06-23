@@ -7,10 +7,11 @@
 // fusion tree-walk (the text vectorizer parity is covered by test_parity.mjs).
 // Run from the REPO ROOT: node classifier/tests/test_fusion_parity.mjs
 import { execFileSync } from "node:child_process";
-import { readFileSync as readFile, existsSync } from "node:fs";
+import { readFileSync as readFile } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { setFusion, fusionScores } from "../../extension/lib/fusion.js";
+import { PY } from "./_py.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(HERE, "..", "..");
@@ -18,16 +19,6 @@ const REPO_ROOT = join(HERE, "..", "..");
 // fresh checkout, no model-rebuild needed.
 const FUSION = JSON.parse(readFile(join(REPO_ROOT, "extension", "model", "fusion.json"), "utf8"));
 setFusion(FUSION);
-
-function resolvePython() {
-  if (process.env.FENCELINE_PYTHON) return process.env.FENCELINE_PYTHON;
-  const winVenv = join(REPO_ROOT, ".venv", "Scripts", "python.exe");
-  const nixVenv = join(REPO_ROOT, ".venv", "bin", "python");
-  if (existsSync(winVenv)) return winVenv;
-  if (existsSync(nixVenv)) return nixVenv;
-  return process.platform === "win32" ? "python" : "python3";
-}
-const PY = resolvePython();
 
 // A few records spanning class signals + varied structure, so the walk visits
 // many distinct paths. Values are plausible but only need to exercise the trees.
@@ -87,6 +78,47 @@ const RECORDS = [
       tag_a: 300,
       dom_node_count: 3000,
       internal_link_ratio: 0.8
+    }
+  },
+  {
+    title: "Adult Video Tube",
+    meta: "watch now",
+    text: "watch explicit adult videos nsfw porn must be 18 adults only age verification",
+    structural: {
+      has_video_player: true,
+      has_age_gate: true,
+      paragraph_count: 3,
+      link_density: 0,
+      tag_video: 1,
+      image_to_text_ratio: 0.4,
+      fp_adult_adnet_count: 1
+    }
+  },
+  {
+    title: "Playable Game",
+    meta: "free online game",
+    text: "play tower blaster arrow keys to move space to fire click the canvas to start",
+    structural: {
+      has_dominant_canvas: true,
+      canvas_area_fraction: 0.63,
+      tag_canvas: 1,
+      paragraph_count: 1,
+      link_density: 0,
+      dom_node_count: 60
+    }
+  },
+  {
+    title: "Full-canvas proxy",
+    meta: "unblock everything",
+    text: "secure browser unblock any site encrypted browsing session proxy",
+    structural: {
+      has_dominant_canvas: true,
+      canvas_area_fraction: 1.0,
+      has_url_like_input: false,
+      url_embeds_url: false,
+      paragraph_count: 1,
+      link_density: 0,
+      kw_url_proxy: 1
     }
   }
 ];

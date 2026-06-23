@@ -73,7 +73,15 @@ jobs:
         run: |
           mkdir -p classifier/dist
           cp extension/model/model.bin extension/model/model-meta.json classifier/dist/
-      - name: Python <-> JS model parity
+      - name: Python <-> JS model parity (text vectorizer)
         env:
           FENCELINE_PYTHON: python
         run: node classifier/tests/test_parity.mjs
+      - name: Python <-> JS fusion tree-walk parity
+        env:
+          FENCELINE_PYTHON: python
+        run: node classifier/tests/test_fusion_parity.mjs
+      - name: Python <-> JS decision-rule parity + shipped-model sync guard
+        env:
+          FENCELINE_PYTHON: python
+        run: node classifier/tests/test_decision_parity.mjs

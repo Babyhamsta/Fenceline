@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Fraction Practice - Interactive Math Drills</title>
+    <meta name="description" content="An interactive worksheet for practicing adding and subtracting fractions with instant feedback." />
+  </head>
+  <body>
+    <main>
+      <h1>Fraction Practice</h1>
+      <p>
+        Solve each problem and type your answer in lowest terms. The app checks your work instantly
+        and keeps a running score so you can track which skills need more practice.
+      </p>
+      <form id="drill">
+        <p>Question 1: What is 1/2 + 1/4 ?</p>
+        <input type="text" name="a1" inputmode="numeric" aria-label="answer to question one" />
+        <p>Question 2: What is 2/3 - 1/6 ?</p>
+        <input type="text" name="a2" inputmode="numeric" aria-label="answer to question two" />
+        <button type="button" id="check">Check answers</button>
+      </form>
+      <p>
+        Adding fractions requires a common denominator. Once the denominators match you add only the
+        numerators and keep the denominator the same, then simplify the result if possible.
+      </p>
+      <p>
+        Teachers can assign these drills for homework or warm-ups. Each session generates a fresh set
+        of randomized problems so students get unlimited practice without repeating the same answers.
+      </p>
+      <script>
+        document.getElementById("check").addEventListener("click", () => {
+          /* grade locally; no canvas, no game loop */
+        });
+      </script>
+    </main>
+  </body>
+</html>

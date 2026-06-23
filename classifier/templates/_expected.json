@@ -1,0 +1,16 @@
+{
+  "adult_player.html": { "block": "adult", "pin": true },
+  "archive_reader.html": { "block": "clean", "pin": false },
+  "blog_what_is_proxy.html": { "block": "clean", "pin": false },
+  "casino_iframe.html": { "block": "gambling", "pin": true },
+  "casino_live.html": { "block": "gambling", "pin": true },
+  "forum_games_question.html": { "block": "clean", "pin": false },
+  "forum_proxy_question.html": { "block": "clean", "pin": false },
+  "gambling_news.html": { "block": "clean", "pin": false },
+  "gambling_odds_explainer.html": { "block": "clean", "pin": false },
+  "math_practice_app.html": { "block": "clean", "pin": false },
+  "proxy_cgi_glype.html": { "block": "proxy-bypass", "pin": true },
+  "real_game.html": { "block": "games", "pin": true },
+  "real_proxy.html": { "block": "proxy-bypass", "pin": true },
+  "sex_ed_article.html": { "block": "clean", "pin": false }
+}

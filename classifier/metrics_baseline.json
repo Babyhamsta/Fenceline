@@ -1,0 +1,23 @@
+{
+  "model_version": "75f0aa25501ab3f8",
+  "generated_from": "classifier/data/test.jsonl",
+  "n": 5900,
+  "fp_margin_pp": 1.0,
+  "recall_margin_pp": 3.0,
+  "observed": {
+    "clean_fp_rate": 0.0208,
+    "detection_recall": {
+      "adult": 0.7986,
+      "proxy-bypass": 0.6266,
+      "gambling": 0.7569,
+      "games": 0.5592
+    }
+  },
+  "clean_fp_ceiling": 0.0308,
+  "recall_floor": {
+    "adult": 0.7686,
+    "proxy-bypass": 0.5966,
+    "gambling": 0.7269,
+    "games": 0.5292
+  }
+}

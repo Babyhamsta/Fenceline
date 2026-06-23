@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Free Web Proxy - Unblock Any Site</title>
+    <meta name="description" content="Enter a URL to browse blocked sites anonymously through our free web proxy." />
+  </head>
+  <body>
+    <main>
+      <h1>Free Web Proxy</h1>
+      <form action="/browse.php" method="get">
+        <input
+          type="url"
+          name="url"
+          id="url"
+          size="60"
+          placeholder="https://www.youtube.com"
+          aria-label="Enter the URL of the website to unblock"
+        />
+        <select name="server">
+          <option>US Server</option>
+          <option>EU Server</option>
+        </select>
+        <button type="submit">Go</button>
+      </form>
+      <p>Enter a website address above and press Go to browse anonymously.</p>
+    </main>
+  </body>
+</html>

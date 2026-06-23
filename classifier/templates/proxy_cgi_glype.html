@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Free CGI Web Proxy - Browse Anonymously</title>
+    <meta name="description" content="Enter a URL to surf blocked websites through our free anonymous CGI proxy." />
+  </head>
+  <body>
+    <main>
+      <h1>Free Anonymous Web Proxy</h1>
+      <form action="/browse.php" method="get">
+        <input
+          type="text"
+          name="url"
+          id="url"
+          size="60"
+          placeholder="Enter website address e.g. https://www.youtube.com"
+          aria-label="URL of the website to unblock"
+        />
+        <input type="checkbox" name="encodeURL" checked /> Encrypt URL
+        <input type="checkbox" name="removeScripts" /> Remove scripts
+        <button type="submit">Surf</button>
+      </form>
+      <p>Type a website address above and press Surf to browse it anonymously through our servers.</p>
+      <p>This proxy hides your IP address and bypasses network filters so you can reach blocked sites.</p>
+      <footer>
+        <p>Powered by Glype. Visit /nph-proxy.cgi for the legacy endpoint. CGIProxy compatible.</p>
+      </footer>
+    </main>
+  </body>
+</html>
