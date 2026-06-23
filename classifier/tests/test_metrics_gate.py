@@ -4,8 +4,8 @@ category's detection recall drops below its committed floor (both directions).
 
 The corpus (classifier/data/) is gitignored and not redistributed, so this SKIPS
 when test.jsonl is absent -- it gates locally and on private runners that have the
-data; the committed baseline (classifier/data/metrics_baseline.json) travels with
-the repo so the thresholds are reviewable even where the data isn't.
+data; the committed baseline (classifier/metrics_baseline.json) travels with the
+repo so the thresholds are reviewable even where the data isn't.
 """
 
 from pathlib import Path

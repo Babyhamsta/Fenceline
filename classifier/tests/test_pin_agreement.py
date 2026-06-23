@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from classifier.fp_audit import has_functional_element
+from classifier.decision import has_functional_element
 
 FIXTURE = Path(__file__).resolve().parents[2] / "test" / "fixtures" / "pin_agreement.json"
 ROWS = json.loads(FIXTURE.read_text(encoding="utf-8"))["rows"]

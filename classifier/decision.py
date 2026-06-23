@@ -71,3 +71,71 @@ def is_search_engine_url(url: str) -> bool:
     and apply the exemption (top-frame semantics)."""
     parts = urlsplit(url or "")
     return is_search_engine_serp(parts.hostname or "", parts.path or "/")
+
+
+# --- shipped hybrid deploy rule -------------------------------------------
+# The decision the device runs, mirrored from extension/lib/model.js:decide (the
+# SERP exemption is applied by sw.js upstream; folded in here for record-level
+# evaluation). Lives here -- the tracked deploy-rule module -- so the gate/meter
+# tooling depends on it WITHOUT importing the playwright/httpx-heavy fp_audit
+# harness; fp_audit re-exports these for backward compatibility.
+
+
+def top_blocked(scores: Dict[str, float], clean: str) -> tuple:
+    """Highest-scoring non-clean category and its probability ((clean, -1.0) if
+    none). Mirrors extension/lib/model.js:topBlocked (strict >, first-seen tie)."""
+    best_c, best_p = clean, -1.0
+    for c, p in scores.items():
+        if c != clean and p > best_p:
+            best_c, best_p = c, p
+    return best_c, best_p
+
+
+def hybrid_decide(
+    url: str,
+    text_scores: Dict[str, float],
+    fusion_scores: Dict[str, float],
+    structural: Optional[Dict],
+    clean: str = "clean",
+    thr_fusion: float = 0.97,
+    thr_text: float = 0.89,
+) -> tuple:
+    """Returns (category, confidence, reason); category == ``clean`` means allow.
+    Byte-mirror of model.js:decide: SERP-exempt -> fusion top >= thr_fusion ->
+    text top >= thr_text AND NOT prose_rescue -> clean."""
+    if is_search_engine_url(url):
+        return (clean, 0.0, "serp-exempt")
+    fc, fp = top_blocked(fusion_scores, clean)
+    if fp >= thr_fusion:
+        return (fc, fp, "fusion")
+    tc, tp = top_blocked(text_scores, clean)
+    if tp >= thr_text and not prose_rescue(tc, structural):
+        return (tc, tp, "text-backstop")
+    return (clean, max(fp, tp), "-")
+
+
+def has_functional_element(cat: str, s: Dict) -> bool:
+    """True if the page carries the blocked category's defining tool -- evidence
+    it IS the thing, not a page about it. Mirror of extension/lib/pins.js:pinWorthy
+    (the pin-gate), kept identical so the device's pin decision matches the offline
+    routing. A missing structural field reads falsy -> not an instance (fail safe)."""
+    if cat == "proxy-bypass":
+        # url_embeds_url / a proxy marker is proxy-specific. A bare url-like input
+        # also fires on any site's SEARCH box, so only count it on a thin page -- a
+        # real proxy is a tool (few paragraphs), an article isn't.
+        return bool(
+            s.get("url_embeds_url")
+            or int(s.get("fp_proxy_marker_count") or 0) > 0
+            or (s.get("has_url_like_input") and int(s.get("paragraph_count") or 0) < 5)
+        )
+    if cat == "adult":
+        return bool(s.get("has_video_player") or s.get("has_age_gate"))
+    if cat == "gambling":
+        return bool(
+            s.get("has_large_xorigin_iframe")
+            or s.get("has_gambling_license_seal")
+            or s.get("has_payment_field")
+        )
+    if cat == "games":
+        return bool(s.get("has_dominant_canvas"))
+    return False

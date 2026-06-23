@@ -21,23 +21,28 @@ pytest.importorskip("playwright", reason="Playwright not installed")
 
 
 def _render_or_skip():
-    """Score the settled corpus through the shipped model. Skip (don't fail) if no
-    browser is available -- the first render returning None on a real .html means
-    Playwright has no usable Chromium, which is an environment gap, not a defect."""
+    """Score the settled corpus through the shipped model. ONLY a missing browser
+    is skippable -- and that surfaces as render() raising on chromium launch. Once
+    the first render succeeds the browser works, so any later raise OR a None
+    render (extractor/render returning nothing) is a real regression and must
+    FAIL, not skip. This keeps a throwing code bug from hiding as a green skip."""
     score = shipped_scorer()
     results = {}
     templates = sorted(TPL.glob("*.html"))
     assert templates, "no settled templates found"
-    for p in templates:
-        # render() re-raises when chromium can't launch (no browser binary on a
-        # stock CI runner) and returns None on a per-page render failure -- both
-        # are environment gaps, not defects, so skip rather than fail.
-        try:
-            r = score_template(score, p)
-        except Exception as exc:  # noqa: BLE001 - any launch/render error -> skip
-            pytest.skip(f"render unavailable ({exc.__class__.__name__}) -- skipping template gate")
-        if r is None:
-            pytest.skip(f"render failed for {p.name} (no browser?) -- skipping template gate")
+    for i, p in enumerate(templates):
+        if i == 0:
+            # First render doubles as the browser probe: chromium-launch failure
+            # (no binary) raises here -> environment gap -> skip the whole gate.
+            try:
+                r = score_template(score, p)
+            except Exception as exc:  # noqa: BLE001 - launch failure only reaches here on the probe
+                pytest.skip(
+                    f"browser unavailable ({exc.__class__.__name__}) -- skipping template gate"
+                )
+        else:
+            r = score_template(score, p)  # browser proven; let real errors propagate as failures
+        assert r is not None, f"render returned None for {p.name} -- extractor/render regression"
         results[p.name] = r
     return results
 

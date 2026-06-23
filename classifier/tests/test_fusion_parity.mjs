@@ -7,10 +7,11 @@
 // fusion tree-walk (the text vectorizer parity is covered by test_parity.mjs).
 // Run from the REPO ROOT: node classifier/tests/test_fusion_parity.mjs
 import { execFileSync } from "node:child_process";
-import { readFileSync as readFile, existsSync } from "node:fs";
+import { readFileSync as readFile } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { setFusion, fusionScores } from "../../extension/lib/fusion.js";
+import { PY } from "./_py.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(HERE, "..", "..");
@@ -18,16 +19,6 @@ const REPO_ROOT = join(HERE, "..", "..");
 // fresh checkout, no model-rebuild needed.
 const FUSION = JSON.parse(readFile(join(REPO_ROOT, "extension", "model", "fusion.json"), "utf8"));
 setFusion(FUSION);
-
-function resolvePython() {
-  if (process.env.FENCELINE_PYTHON) return process.env.FENCELINE_PYTHON;
-  const winVenv = join(REPO_ROOT, ".venv", "Scripts", "python.exe");
-  const nixVenv = join(REPO_ROOT, ".venv", "bin", "python");
-  if (existsSync(winVenv)) return winVenv;
-  if (existsSync(nixVenv)) return nixVenv;
-  return process.platform === "win32" ? "python" : "python3";
-}
-const PY = resolvePython();
 
 // A few records spanning class signals + varied structure, so the walk visits
 // many distinct paths. Values are plausible but only need to exercise the trees.

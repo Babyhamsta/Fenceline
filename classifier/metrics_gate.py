@@ -14,7 +14,7 @@ labeled pages with real scrape-time structural features). It produces NUMBERS:
   - per-category precision        (of pages blocked as c, how many truly are c)
   - wrong-category confusion count
 
-`--assert` gates those numbers against classifier/data/metrics_baseline.json
+`--assert` gates those numbers against classifier/metrics_baseline.json
 (committed): FAIL if clean-FP rises above the ceiling OR any category's detection
 recall drops below its floor. Hard, both directions. `--update-baseline`
 regenerates the baseline from the current run (ceiling = observed FP + margin,
@@ -37,10 +37,14 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from classifier import fusion_ref
-from classifier.fp_audit import CLEAN, hybrid_decide
+from classifier.decision import hybrid_decide
+
+CLEAN = fusion_ref.META.get("clean_label", "clean")
+THR_FUSION = float(fusion_ref.META.get("thr_fusion") or 0.97)
+THR_TEXT = float(fusion_ref.META.get("thr_text") or 0.89)
 
 ROOT = Path(__file__).resolve().parent
 TEST_SET = ROOT / "data" / "test.jsonl"
@@ -63,35 +67,23 @@ def load_rows(path: Path) -> List[Dict]:
     ]
 
 
-def _decide(rec: Dict, thr_fusion: Optional[float] = None, thr_text: Optional[float] = None):
-    """Shipped hybrid decision for one record. thr_* override the bundled operating
-    point (used by --sweep); None = the shipped thresholds inside hybrid_decide."""
+def _decide(rec: Dict, thr_fusion: Optional[float] = None, thr_text: Optional[float] = None) -> str:
+    """Shipped hybrid decision for one record, via the single rule body in
+    classifier.decision.hybrid_decide. thr_* override the bundled operating point
+    (used by --sweep); None = the shipped thresholds."""
     s = rec.get("structural") or {}
     ts = fusion_ref.text_scores(rec)
     fs = fusion_ref.fusion_scores(ts, s)
-    if thr_fusion is None and thr_text is None:
-        cat, _, _ = hybrid_decide(rec.get("url", ""), ts, fs, s)
-        return cat
-    # Threshold override path: replicate hybrid_decide with custom thresholds.
-    from classifier.decision import is_search_engine_url, prose_rescue
-
-    if is_search_engine_url(rec.get("url", "")):
-        return CLEAN
-    fc, fp = _top(fs)
-    if fp >= thr_fusion:
-        return fc
-    tc, tp = _top(ts)
-    if tp >= thr_text and not prose_rescue(tc, s):
-        return tc
-    return CLEAN
-
-
-def _top(scores: Dict[str, float]) -> Tuple[str, float]:
-    best_c, best_p = CLEAN, -1.0
-    for c, p in scores.items():
-        if c != CLEAN and p > best_p:
-            best_c, best_p = c, p
-    return best_c, best_p
+    cat, _, _ = hybrid_decide(
+        rec.get("url", ""),
+        ts,
+        fs,
+        s,
+        clean=CLEAN,
+        thr_fusion=THR_FUSION if thr_fusion is None else thr_fusion,
+        thr_text=THR_TEXT if thr_text is None else thr_text,
+    )
+    return cat
 
 
 def measure(rows: List[Dict], thr_fusion=None, thr_text=None) -> Dict:

@@ -41,9 +41,13 @@ from pathlib import Path
 from typing import Callable, Dict, Optional, Tuple
 
 from classifier import fusion_ref
+from classifier.decision import has_functional_element, hybrid_decide
 from classifier.extract import build_record
-from classifier.fp_audit import CLEAN, has_functional_element, hybrid_decide
 from classifier.render import render
+
+CLEAN = fusion_ref.META.get("clean_label", "clean")
+THR_FUSION = float(fusion_ref.META.get("thr_fusion") or 0.97)
+THR_TEXT = float(fusion_ref.META.get("thr_text") or 0.89)
 
 ROOT = Path(__file__).resolve().parent
 TPL = ROOT / "templates"
@@ -63,7 +67,9 @@ def shipped_scorer() -> Scorer:
         structural = rec.get("structural") or {}
         ts = fusion_ref.text_scores(rec)
         fs = fusion_ref.fusion_scores(ts, structural)
-        return hybrid_decide(url, ts, fs, structural)
+        return hybrid_decide(
+            url, ts, fs, structural, clean=CLEAN, thr_fusion=THR_FUSION, thr_text=THR_TEXT
+        )
 
     return score
 
@@ -144,7 +150,7 @@ def run(score: Scorer, include_exploratory: bool) -> Dict[str, Dict]:
         if r is not None:
             results[p.name] = r
     if include_exploratory and EXPLORATORY.is_dir():
-        print(f"\n--- exploratory (printed, never asserted) ---")
+        print("\n--- exploratory (printed, never asserted) ---")
         for p in sorted(EXPLORATORY.glob("*.html")):
             print_row(score_template(score, p), p.name)
     return results

@@ -13,11 +13,12 @@
 //
 // Run from the REPO ROOT: node classifier/tests/test_decision_parity.mjs
 import { execFileSync } from "node:child_process";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { decide, _loadModelForTest } from "../../extension/lib/model.js";
 import { isSearchEngineSerp } from "../../extension/lib/detect/search-engine.js";
+import { PY } from "./_py.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(HERE, "..", "..");
@@ -29,16 +30,6 @@ const fusion = JSON.parse(readFileSync(join(MODEL, "fusion.json"), "utf8"));
 const binBuf = readFileSync(join(MODEL, "model.bin"));
 const coef = binBuf.buffer.slice(binBuf.byteOffset, binBuf.byteOffset + binBuf.byteLength);
 _loadModelForTest(coef, meta, fusion);
-
-function resolvePython() {
-  if (process.env.FENCELINE_PYTHON) return process.env.FENCELINE_PYTHON;
-  const winVenv = join(REPO_ROOT, ".venv", "Scripts", "python.exe");
-  const nixVenv = join(REPO_ROOT, ".venv", "bin", "python");
-  if (existsSync(winVenv)) return winVenv;
-  if (existsSync(nixVenv)) return nixVenv;
-  return process.platform === "win32" ? "python" : "python3";
-}
-const PY = resolvePython();
 
 // Cases span every rule branch and mirror the template structural vectors so this
 // doubles as the device-vs-harness sync check on the shapes the corpus probes.
@@ -61,28 +52,24 @@ const CASES = [
     }
   },
   {
-    name: "text-backstop: thin web proxy (url box, no prose)",
+    // Strong proxy vocab + a URL box on a thin page; fusion clears thr here.
+    name: "fusion-block: thin web proxy (url box)",
     url: "https://freeproxy.example/",
     text: "free web proxy unblock any site enter the url of the website to browse anonymously",
     structural: { has_url_like_input: true, paragraph_count: 1, link_density: 0 }
   },
   {
-    // Prose structure + heavy proxy vocab. Whichever branch fires (fusion vs
-    // text-backstop-then-prose-rescue), both sides must land on the SAME verdict —
-    // that agreement is the point. The rescue->clean transition itself is unit-
-    // tested in test/detect.mjs (proseRescue) and the clean prose templates.
-    name: "proxy article (prose, no functional element)",
-    url: "https://blog.example/what-is-a-proxy",
+    // Gambling-heavy vocab but PROSE structure (low link density, many paragraphs,
+    // no functional element): fusion stays below thr_fusion, text clears thr_text,
+    // and prose_rescue overturns the text-backstop -> clean. Exercises the
+    // rescue->clean branch (the core is-vs-about defense) end-to-end across JS/Py.
+    name: "prose-rescue->clean: casino review article",
+    url: "https://reviews.example/red-dog-casino-review",
     text:
-      "a proxy server is an intermediary between a client and the internet it forwards requests " +
-      "organisations use proxies for caching access control and monitoring a reverse proxy balances load",
-    structural: {
-      link_density: 0.2,
-      paragraph_count: 8,
-      has_url_like_input: false,
-      url_embeds_url: false,
-      has_dominant_canvas: false
-    }
+      "red dog casino review play online slots blackjack roulette poker free no deposit " +
+      "bonus codes best online casinos mobile casino games we review the welcome bonus and " +
+      "wagering requirements for new players and explain how the games work in plain language",
+    structural: { link_density: 0.11, paragraph_count: 14 }
   },
   {
     name: "fusion-block: adult video player + age gate",
@@ -91,7 +78,9 @@ const CASES = [
     structural: { has_video_player: true, has_age_gate: true, paragraph_count: 2, link_density: 0 }
   },
   {
-    name: "fusion-block: casino (license seal + payment)",
+    // License seal + payment, but thin gambling text -> fusion sits just under thr
+    // and the block comes from the text-backstop (the [reason] column confirms it).
+    name: "text-backstop: casino (license seal + payment)",
     url: "https://casino.example/play",
     text: "play real money slots blackjack roulette deposit now welcome bonus licensed curacao gaming",
     structural: {
@@ -135,14 +124,16 @@ const pyOut = JSON.parse(
       [
         "import json,sys",
         "from classifier import fusion_ref as FR",
-        "from classifier.fp_audit import hybrid_decide, CLEAN",
+        "from classifier.decision import hybrid_decide",
+        "CLEAN=FR.META.get('clean_label','clean')",
+        "TF=float(FR.META.get('thr_fusion') or 0.97); TT=float(FR.META.get('thr_text') or 0.89)",
         "cases=json.loads(sys.argv[1])",
         "out=[]",
         "for c in cases:",
         "    rec={'title':'','meta':'','text':c['text'],'structural':c['structural'],'url':c['url']}",
         "    ts=FR.text_scores(rec)",
         "    fs=FR.fusion_scores(ts, c['structural'])",
-        "    cat,conf,reason=hybrid_decide(c['url'], ts, fs, c['structural'])",
+        "    cat,conf,reason=hybrid_decide(c['url'], ts, fs, c['structural'], CLEAN, TF, TT)",
         "    out.append({'category': cat if cat!=CLEAN else 'clean','blocked': cat!=CLEAN,'reason':reason,'confidence':conf})",
         "print(json.dumps(out))"
       ].join("\n"),
@@ -157,6 +148,11 @@ CASES.forEach((c, i) => {
   const js = jsDecide(c);
   const py = pyOut[i];
   const catOk = js.category === py.category && js.blocked === py.blocked;
+  // 1e-4 (looser than fusion_parity's 1e-9) because this is a FULL-pipeline test:
+  // each side computes text scores independently (JS classify vs Python
+  // text_scores), so a ~1e-6 vectorizer delta can propagate into the fusion
+  // confidence. fusion_parity feeds identical text scores to both sides, so it
+  // can demand 1e-9. The category decision is unaffected by this margin.
   const confOk = !js.blocked || Math.abs(js.confidence - py.confidence) < 1e-4;
   if (catOk && confOk) {
     console.log(

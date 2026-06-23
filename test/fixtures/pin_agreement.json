@@ -20,6 +20,24 @@
       "pin": true
     },
     {
+      "name": "proxy: URL box, paragraph_count ABSENT (missing reads 0 < 5)",
+      "category": "proxy-bypass",
+      "structural": { "has_url_like_input": true },
+      "pin": true
+    },
+    {
+      "name": "proxy: URL box at paras=4 (boundary, 4 < 5)",
+      "category": "proxy-bypass",
+      "structural": { "has_url_like_input": true, "paragraph_count": 4 },
+      "pin": true
+    },
+    {
+      "name": "proxy: URL box at paras=5 (boundary, 5 not < 5)",
+      "category": "proxy-bypass",
+      "structural": { "has_url_like_input": true, "paragraph_count": 5 },
+      "pin": false
+    },
+    {
       "name": "proxy: article with site search box (paras>=5)",
       "category": "proxy-bypass",
       "structural": { "has_url_like_input": true, "paragraph_count": 14 },
