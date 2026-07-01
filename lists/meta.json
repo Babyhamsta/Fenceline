@@ -1,6 +1,6 @@
 {
-  "version": "9ebd586dd5e09092",
-  "generated": "2026-06-29T10:59:13.926Z",
+  "version": "c8197e468bd3d311",
+  "generated": "2026-07-01T10:35:12.993Z",
   "categories": [
     "adult",
     "gambling",
@@ -13,14 +13,14 @@
     "custom"
   ],
   "counts": {
-    "total": 6983721,
+    "total": 7002024,
     "dnrTier": 500000,
-    "rules": 9144
+    "rules": 9145
   },
   "chunks": [
     {
       "file": "000.json",
-      "sha256": "41c9ea36aa57e3ed6972b9e08d4132d910bc5d46c50cb8eb940f847af9c9f62e",
+      "sha256": "f9e46c1320a32526bca7c1ddc380a20ae6f33a2f535e759a5c9be63eeafc67b7",
       "ruleIdStart": 1,
       "ruleCount": 500,
       "maxRules": 500,
@@ -28,7 +28,7 @@
     },
     {
       "file": "001.json",
-      "sha256": "6fd25411e2b126df5f39749b90f3f5b895509f684dfe10c2530acdd0bd9da868",
+      "sha256": "306fa1578cb9e0f64a04c5135e0aa06be006a8bc3dee1f8b9a87d2edb1ce1493",
       "ruleIdStart": 501,
       "ruleCount": 500,
       "maxRules": 500,
@@ -36,149 +36,149 @@
     },
     {
       "file": "002.json",
-      "sha256": "81312aa3e46b92bc1382ff8bc19fb08b7fb2b5789a2226697eaf9270819be3ee",
+      "sha256": "427a75854130a24d0999b56825fcba866e414f252278f82740ea0f3e3bfc35bf",
       "ruleIdStart": 1001,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 28770
+      "domains": 28764
     },
     {
       "file": "003.json",
-      "sha256": "ef80a30cbd079e861ca41a7dea2999a908fe7d11fbbe67e6558adfb2520aa5c7",
+      "sha256": "84b29a38b0084b0e91c92208a25ddb8a5c236648c1c3a80ac854e22526be7d03",
       "ruleIdStart": 1501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 25194
+      "domains": 25213
     },
     {
       "file": "004.json",
-      "sha256": "dcbdfe0ecab3e8a61a8080ef22c52659af6674e2fe95f81c3aabd1c4face55a4",
+      "sha256": "ef6b0851aca0e97ea14ebe77ac4905f6cd8348753090d4a6d5422a41fc7a3ef7",
       "ruleIdStart": 2001,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 26184
+      "domains": 26159
     },
     {
       "file": "005.json",
-      "sha256": "b5bc6e772f3a7cb2fb4013e1b194485b5f45e81ae7c4632b01ad1bf054d14b23",
+      "sha256": "08e128fcfc3ffefc824abc137c81d2cf43bc65db432db7845dc9b0ff949c2f5a",
       "ruleIdStart": 2501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 27260
+      "domains": 27285
     },
     {
       "file": "006.json",
-      "sha256": "f46ed536c1029803d251e4a8f1ebf0a1a7ad73adb87e4fafa586ff712ddadd7a",
+      "sha256": "02906261d0d2e0a1b05172e5de4b21f6f9a2c613b47beb41cf7b9de95668f383",
       "ruleIdStart": 3001,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 27243
+      "domains": 27218
     },
     {
       "file": "007.json",
-      "sha256": "4e4442f98a3f8d719333c0ebbdbd588c94d301ac56044b05a4595c681acf0a79",
+      "sha256": "31c212f0f15cdda647f052331b3317c046493401cd1d67203e3bd6da9ef75522",
       "ruleIdStart": 3501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 26176
+      "domains": 26178
     },
     {
       "file": "008.json",
-      "sha256": "4f8640147973751c129f0c1419c1dcc8bfe34dcea3122e2d73b46f6de8865f1a",
+      "sha256": "e26285447db40d72c01bb26f233de06e4f98d33989ff09b105b70b1dd4f6512e",
       "ruleIdStart": 4001,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 26325
+      "domains": 26351
     },
     {
       "file": "009.json",
-      "sha256": "7be303d3e00b81d03d1c218c4b1c5525b77f897894a546261bf9a5e55aa644db",
+      "sha256": "e56e57c2b95ced05e46d5f7060b6b3e9a12f305baf643542294aaeb985a20e10",
       "ruleIdStart": 4501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 27645
+      "domains": 27620
     },
     {
       "file": "010.json",
-      "sha256": "0db9c2d38420dc6af4e52ceea6c0a819b63cf51374e880eb3b9f823f129df1fb",
+      "sha256": "4f24e1441fc760fef9c6120398eb3bc76e89cf534c2cbcf169d193a7399681ab",
       "ruleIdStart": 5001,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 27063
+      "domains": 27064
     },
     {
       "file": "011.json",
-      "sha256": "32bb49c0bd5cf7c661c351b3226f3f154c449e3208cae61839ca2856b6d9d149",
+      "sha256": "aa35f286352612d946f56e78320246497500a0736702c102bb5302eb6210b6fb",
       "ruleIdStart": 5501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 27113
+      "domains": 27112
     },
     {
       "file": "012.json",
-      "sha256": "a93c3fc540602c25e67c38d4e2d649d3d4c6bdc4005efe3e5304174f0c0fc135",
+      "sha256": "4b5c669fc712c8e1d3005a29dabb0ccba456f214dd598d6227a878f2ebf3280a",
       "ruleIdStart": 6001,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 26914
+      "domains": 26918
     },
     {
       "file": "013.json",
-      "sha256": "2e4455635df28b5e7a89ed97390c1df0980aead1829fcd1d78d78d0d16854333",
+      "sha256": "87af8d309a7109c031b879e759dbf1e0c8fd2ecb342186a3a3e067c65b6f8380",
       "ruleIdStart": 6501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 27643
+      "domains": 27634
     },
     {
       "file": "014.json",
-      "sha256": "fa0bb0db984e47fc616b68baf808b468eeaf43b276a68356f3a66fb476c1be48",
+      "sha256": "8bd4e8fe089711193f070b6e83c34d6923fac72c28e14e47a67cc1698fa5826d",
       "ruleIdStart": 7001,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 27391
+      "domains": 27396
     },
     {
       "file": "015.json",
-      "sha256": "c748eeb76c1c2e5cd2317047b98bbd2de9f22e92dc3e524922c0c0374d671397",
+      "sha256": "70b2d86c89e590e527239eadec7a607de187b1931b38cce5f9bc58397e055f87",
       "ruleIdStart": 7501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 27718
+      "domains": 27719
     },
     {
       "file": "016.json",
-      "sha256": "f15bf809b7c562e90d8c660d1412cca20c18dca127387e394894150a46c65025",
+      "sha256": "2b6aee56d79c54b73b257b5e2b7c1b355e896579c677cd3b22c85dc8347c9b42",
       "ruleIdStart": 8001,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 27070
+      "domains": 27069
     },
     {
       "file": "017.json",
-      "sha256": "fc1425fb35456c14a7a32bba9b7517a8df6e0978803dfda88278fd52dacbed1c",
+      "sha256": "37f2148863a8e8ce7a7f3212840480650a32fd1f55e60998c542509ff82a3151",
       "ruleIdStart": 8501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 27500
+      "domains": 27508
     },
     {
       "file": "018.json",
-      "sha256": "6b69f6e6ec6874df02f71a87eb699bcff652fec25b9477e4cf79a7895775d9e2",
+      "sha256": "5abcf02fe7ca02d748ef6d064a9882d861a20deaedca9cc68d2319d8e93b60c9",
       "ruleIdStart": 9001,
-      "ruleCount": 144,
+      "ruleCount": 145,
       "maxRules": 500,
-      "domains": 7518
+      "domains": 7519
     }
   ],
   "tail": {
     "file": "tail.bin",
-    "sha256": "5e49b62a4d57d531a6750087d4affef98285f8126edb84c29e884d7f785280a4",
-    "count": 6983721
+    "sha256": "faf1040b239fd59ad5573d1f2e0538dacdb22738fe72639729181ae7f7f37812",
+    "count": 7002024
   },
   "cats": {
     "file": "cats.bin",
-    "sha256": "fa68e45079b014aa81abd3c5ae96832d23ca65ab78d04e3184579276fc8c7a0f"
+    "sha256": "fac513d858e33a39cb8cf08a587b974f70ce6c5e4410dbc06deed165cba25a10"
   },
   "noPinHosts": [
     "sites.google.com",
