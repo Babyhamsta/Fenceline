@@ -1,6 +1,6 @@
 {
-  "version": "b0211d9498a6367d",
-  "generated": "2026-09-19T13:12:34.123Z",
+  "version": "38107d673406f0c7",
+  "generated": "2026-09-20T21:13:32.311Z",
   "categories": [
     "adult",
     "gambling",
@@ -13,14 +13,14 @@
     "custom"
   ],
   "counts": {
-    "total": 8314319,
+    "total": 8357786,
     "dnrTier": 500000,
-    "rules": 9138
+    "rules": 9139
   },
   "chunks": [
     {
       "file": "000.json",
-      "sha256": "527a90a707e9fe236251d0fbb2e53bccb3e3f8dbdfad4cdbcbb37b7ead28edfd",
+      "sha256": "af10e58b54bd96094ab573d96f41e3469fe97f2e1a997e802da4f153922326d3",
       "ruleIdStart": 1,
       "ruleCount": 500,
       "maxRules": 500,
@@ -28,27 +28,27 @@
     },
     {
       "file": "001.json",
-      "sha256": "3acfe80bd74f508a9b91b5f21ae4b63b7947bd1ea15c2139ea3d5e47cf076e4d",
+      "sha256": "02fea41886e2e10593b6ced63ab645d7eebaee5468991c6329118cf8da243e72",
       "ruleIdStart": 501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 29478
+      "domains": 29443
     },
     {
       "file": "002.json",
-      "sha256": "8bbe14046a6057c97c1068a8a60fd1a7401917254dd6f42b6a36b3883875fa38",
+      "sha256": "5405b2e281d962e721773075b50fa5c11a9d00a5a08c5fc0d173439f5c8c566c",
       "ruleIdStart": 1001,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 28776
+      "domains": 28774
     },
     {
       "file": "003.json",
-      "sha256": "f5aff0f37a17e747b2f5d53cd8469dbc37fa509232a5ee7592818d357ff5be45",
+      "sha256": "0769786f7fed1205791b1e6500718b64b4afb64f8494f4ddc0285576e6fbc928",
       "ruleIdStart": 1501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 25704
+      "domains": 25705
     },
     {
       "file": "004.json",
@@ -60,11 +60,11 @@
     },
     {
       "file": "005.json",
-      "sha256": "cae9707835aa97d0f305b1b9ec1f5f66309e02a6392f7fc3b89fcecdf1be449a",
+      "sha256": "df38bbeaffe0ddad2c28d892a23c679ccf59cce4d17b704cd51908825b8c1a4f",
       "ruleIdStart": 2501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 27279
+      "domains": 27280
     },
     {
       "file": "006.json",
@@ -76,15 +76,15 @@
     },
     {
       "file": "007.json",
-      "sha256": "13315f1bb4d14fad970a7425c85ff2f4774e22343d219e031cfe1a2e985f3bc1",
+      "sha256": "b247d4cd9e11636795d0bf9b2702ad756dc63551d02bedc06a1175aedc1c53e6",
       "ruleIdStart": 3501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 26628
+      "domains": 26627
     },
     {
       "file": "008.json",
-      "sha256": "a8c1a395724a9785509f3afdea2d51b334cf9eb7091acd817a72abb4015689a2",
+      "sha256": "ca7b71ebeea9da8698eb10c5050e1931010cf1d7e53d32cb557887b25e730367",
       "ruleIdStart": 4001,
       "ruleCount": 500,
       "maxRules": 500,
@@ -92,7 +92,7 @@
     },
     {
       "file": "009.json",
-      "sha256": "ff1cdbb2bd88d56d0e29a210b8af0de8ecf4e4dcb17d4cd1d1889e395675db5a",
+      "sha256": "b88e9299640a369e1ec6dfa4935fb234656679e2770b6609b47788e5bb5b20a6",
       "ruleIdStart": 4501,
       "ruleCount": 500,
       "maxRules": 500,
@@ -108,11 +108,11 @@
     },
     {
       "file": "011.json",
-      "sha256": "d1af39149fd71aaac269ff24384ea17daa7b20085ff75ed7e7fb4f8cd283e04c",
+      "sha256": "bd33b3c2661f34fd1d21189af20e00e54f12dc3a328099d31ff36f9622efa301",
       "ruleIdStart": 5501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 27099
+      "domains": 27100
     },
     {
       "file": "012.json",
@@ -124,7 +124,7 @@
     },
     {
       "file": "013.json",
-      "sha256": "55614e441a16ee7a69e0bda1fd9b799c800a579346137f01817e566a5b73518a",
+      "sha256": "abaf05ab12e906f3c25eb4a0ea3f8a5291211039103335b91caee3f7feffbafd",
       "ruleIdStart": 6501,
       "ruleCount": 500,
       "maxRules": 500,
@@ -148,37 +148,37 @@
     },
     {
       "file": "016.json",
-      "sha256": "3870839cdf5a60f8fd872230f0fb4bd0d96c96f2bc94ecf47f2783c5c50c815e",
+      "sha256": "52b896b497c73204a83bdcd76b08c4bedcb00c6561b5eb396498d40f5eb53595",
       "ruleIdStart": 8001,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 27016
+      "domains": 27017
     },
     {
       "file": "017.json",
-      "sha256": "4f31ddd2e40fc232ac80ff4c3385527ded4d9d6c2b602e66c49d765ff6108d67",
+      "sha256": "6edf2d2f9f82566644187960f0dd9b160458136df792fd0d05e41857402a3ddf",
       "ruleIdStart": 8501,
       "ruleCount": 500,
       "maxRules": 500,
-      "domains": 28024
+      "domains": 28026
     },
     {
       "file": "018.json",
-      "sha256": "c01574fe0f5531cbb9d4c40f1d573b36cc643c3956f93c8fc8916f8c8491c962",
+      "sha256": "994b58e2a81e22b5c41f36d9dabebf509eb358a5ffa8edfbece37b1afe7e4e4f",
       "ruleIdStart": 9001,
-      "ruleCount": 138,
+      "ruleCount": 139,
       "maxRules": 500,
-      "domains": 6561
+      "domains": 6593
     }
   ],
   "tail": {
     "file": "tail.bin",
-    "sha256": "efabd1883a85c64cb927ddf94f6b3091cf9e39766aa2240051ef2a612d67698e",
-    "count": 8314319
+    "sha256": "13c4f4b9d57ceda10913ff4f5212289308db779e697fbc750cb5531af5d77b1c",
+    "count": 8357786
   },
   "cats": {
     "file": "cats.bin",
-    "sha256": "54311ee88836b9d2f08123d47868a3ba5615b92b1a2c7e26d5ee39b5501e2969"
+    "sha256": "d0cd959c8d17052b90a1daac3d05d6f77c8d36913dac8779aac4e6047aa204f3"
   },
   "noPinHosts": [
     "sites.google.com",
@@ -188,6 +188,7 @@
     "drive.google.com",
     "translate.google.com",
     "webcache.googleusercontent.com",
+    "groups.google.com",
     "archive.org",
     "archive.ph",
     "archive.today",
@@ -203,6 +204,59 @@
     "statically.io",
     "raw.githubusercontent.com",
     "gitcdn.link",
-    "gitcdn.xyz"
-  ]
+    "gitcdn.xyz",
+    "github.io",
+    "gitlab.io",
+    "pages.dev",
+    "workers.dev",
+    "vercel.app",
+    "netlify.app",
+    "web.app",
+    "firebaseapp.com",
+    "herokuapp.com",
+    "glitch.me",
+    "repl.co",
+    "replit.app",
+    "replit.dev",
+    "codepen.io",
+    "codesandbox.io",
+    "stackblitz.com",
+    "jsfiddle.net",
+    "surge.sh",
+    "onrender.com",
+    "pythonanywhere.com",
+    "itch.io",
+    "neocities.org",
+    "github.com",
+    "gitlab.com",
+    "bitbucket.org",
+    "sourceforge.net",
+    "codeberg.org",
+    "huggingface.co",
+    "quora.com",
+    "reddit.com",
+    "news.ycombinator.com",
+    "stackoverflow.com",
+    "stackexchange.com",
+    "superuser.com",
+    "serverfault.com",
+    "askubuntu.com",
+    "medium.com",
+    "substack.com",
+    "wordpress.com",
+    "blogspot.com",
+    "tumblr.com",
+    "dev.to",
+    "pastebin.com"
+  ],
+  "model": {
+    "file": "model.bin",
+    "metaFile": "model-meta.json",
+    "version": "75f0aa25501ab3f8",
+    "sha256": "01640f4308c9429e02655f1cb9b61d28beb837c99452f7c6fd8a7c3d7e4ae2fd",
+    "metaSha256": "5f42e04d2f730df18a6c0c3ae6132106764d430e7407b5da201bc3ab60bc6659",
+    "fusionFile": "fusion.json",
+    "fusionSha256": "085e1f0803dfca449afee1666d3a177b199ac45174fbfbab8231449d8a51f088"
+  },
+  "publicationVersion": "164683fef770b20c"
 }
