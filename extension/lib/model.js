@@ -12,47 +12,17 @@
 import { setFusion, isFusionReady, fusionScores } from "./fusion.js";
 import { proseRescue } from "./detect/prose-rescue.js";
 
-const DB_NAME = "fenceline";
-const STORE = "artifacts";
+import { readArtifacts, writeArtifacts } from "./artifacts.js";
 
-let COEF = null; // Float32Array, row-major [classes x dims]
-let META = null; // { version, dims, classes, intercept, clean_label, block_threshold, thr_* }
+let COEF = null;
+let META = null;
 let loadPromise = null;
 
-function idb() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function idbGet(db, key) {
-  return new Promise((resolve, reject) => {
-    const req = db.transaction(STORE).objectStore(STORE).get(key);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function idbSet(db, key, val) {
-  return new Promise((resolve, reject) => {
-    const req = db.transaction(STORE, "readwrite").objectStore(STORE).put(val, key);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-}
-
 export async function storeModel(coefBuf, meta, fusion) {
-  const db = await idb();
-  await idbSet(db, "model", coefBuf);
-  await idbSet(db, "modelMeta", meta);
-  if (fusion) await idbSet(db, "fusion", fusion);
-  db.close();
+  await writeArtifacts({ model: coefBuf, modelMeta: meta, fusion: fusion || null });
   COEF = new Float32Array(coefBuf);
   META = meta;
-  if (fusion) setFusion(fusion);
+  setFusion(fusion || null);
 }
 
 // Test seam: load model state synchronously from in-memory artifacts, bypassing
@@ -62,14 +32,12 @@ export async function storeModel(coefBuf, meta, fusion) {
 export function _loadModelForTest(coefBuf, meta, fusion) {
   COEF = new Float32Array(coefBuf);
   META = meta;
-  if (fusion) setFusion(fusion);
+  setFusion(fusion || null);
 }
 
 export async function getStoredModelVersion() {
   try {
-    const db = await idb();
-    const m = await idbGet(db, "modelMeta");
-    db.close();
+    const { modelMeta: m } = await readArtifacts(["modelMeta"]);
     return (m && m.version) || null;
   } catch {
     return null;
@@ -89,6 +57,7 @@ async function loadBundled() {
     if (!binRes.ok || !metaRes.ok) return false;
     COEF = new Float32Array(await binRes.arrayBuffer());
     META = await metaRes.json();
+    setFusion(null);
     // Stage-2 fusion model travels alongside the text weights. Optional: if it's
     // absent or fails to parse, decide() degrades to text-only.
     if (META.fusion_file) {
@@ -110,17 +79,15 @@ export function ensureModelLoaded() {
   if (!loadPromise) {
     loadPromise = (async () => {
       try {
-        const db = await idb();
-        const [buf, meta, fusion] = await Promise.all([
-          idbGet(db, "model"),
-          idbGet(db, "modelMeta"),
-          idbGet(db, "fusion")
-        ]);
-        db.close();
+        const {
+          model: buf,
+          modelMeta: meta,
+          fusion
+        } = await readArtifacts(["model", "modelMeta", "fusion"]);
         if (buf && meta) {
           COEF = new Float32Array(buf);
           META = meta;
-          if (fusion) setFusion(fusion);
+          setFusion(fusion || null);
           return true;
         }
         // No synced model yet — fall back to the bundled baseline.

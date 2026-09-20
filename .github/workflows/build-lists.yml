@@ -8,6 +8,8 @@ on:
     paths:
       - "compiler/**"
       - "lists/**"
+      - "extension/model/**"
+      - ".github/workflows/build-lists.yml"
     branches: [main]
 
 permissions:
@@ -37,8 +39,8 @@ jobs:
       - name: Skip publish if content unchanged
         id: diff
         run: |
-          NEW_VERSION=$(node -p "require('./dist/meta.json').version")
-          OLD_VERSION=$(curl -fsSL "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/lists/meta.json" 2>/dev/null | node -p "try{JSON.parse(require('fs').readFileSync(0)).version}catch(e){''}" || echo "")
+          NEW_VERSION=$(node -p "require('./dist/meta.json').publicationVersion")
+          OLD_VERSION=$(curl -fsSL "https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/lists/meta.json" 2>/dev/null | node -p "try{JSON.parse(require('fs').readFileSync(0)).publicationVersion || ''}catch(e){''}" || echo "")
           echo "new=$NEW_VERSION old=$OLD_VERSION"
           if [ "$NEW_VERSION" = "$OLD_VERSION" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"

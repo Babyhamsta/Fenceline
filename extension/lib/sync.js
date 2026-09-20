@@ -49,12 +49,34 @@ function resourceTypes(cfg) {
 }
 
 // Apply managed-policy allow/deny domains as dynamic rules.
-export async function applyPolicyRules() {
+let operationQueue = Promise.resolve();
+function enqueue(operation) {
+  const result = operationQueue.then(operation);
+  operationQueue = result.catch(() => {});
+  return result;
+}
+
+export function applyPolicyRules() {
+  return enqueue(applyPolicyRulesNow);
+}
+
+async function applyPolicyRulesNow() {
   const cfg = await getConfig();
   const existing = await chrome.declarativeNetRequest.getDynamicRules();
   const oldIds = existing.filter((r) => r.id >= ALLOW_ID_BASE).map((r) => r.id);
 
-  const addRules = [];
+  const rt = resourceTypes(cfg);
+  const changedListRules = existing.filter(
+    (r) =>
+      r.id < ALLOW_ID_BASE &&
+      r.action.type === "block" &&
+      JSON.stringify(r.condition.resourceTypes) !== JSON.stringify(rt)
+  );
+  oldIds.push(...changedListRules.map((r) => r.id));
+  const addRules = changedListRules.map((r) => ({
+    ...r,
+    condition: { ...r.condition, resourceTypes: rt }
+  }));
   cfg.allowDomains.slice(0, MAX_POLICY_RULES).forEach((d, i) => {
     addRules.push({
       id: ALLOW_ID_BASE + i,
@@ -184,9 +206,18 @@ async function syncModel(cfg, meta) {
   return modelMeta.version;
 }
 
-export async function checkAndSync(force = false) {
+export function checkAndSync(force = false) {
+  return enqueue(() => checkAndSyncNow(force));
+}
+
+async function checkAndSyncNow(force) {
   const cfg = await getConfig();
-  const st = await chrome.storage.local.get(["lastFullSync", "chunkState", "lastCheck"]);
+  const st = await chrome.storage.local.get([
+    "lastFullSync",
+    "chunkState",
+    "lastCheck",
+    "listVersion"
+  ]);
 
   let meta;
   try {
@@ -212,18 +243,17 @@ export async function checkAndSync(force = false) {
   }
 
   const currentVersion = await getStoredVersion();
-  // Never re-download an identical version, even on a forced check. "Force"
-  // only bypasses the time throttle below (to pull a genuinely NEW version
-  // early) — it must not let a spammed button re-fetch tens of MB of
-  // unchanged artifacts and burn fleet bandwidth.
-  if (currentVersion === meta.version) {
+  // Both the artifact version and the completion marker must match. A rules
+  // failure after artifact commit leaves them different so the next check retries.
+  if (currentVersion === meta.version && st.listVersion === meta.version) {
     return { synced: false, reason: "up-to-date", version: meta.version };
   }
 
   // Throttle full artifact downloads to protect fleet bandwidth —
   // unless we have no list at all, or an admin forced it.
   const days = (Date.now() - (st.lastFullSync || 0)) / 86400000;
-  if (!force && currentVersion && days < cfg.minDaysBetweenFullSync) {
+  const incomplete = currentVersion && currentVersion !== st.listVersion;
+  if (!force && currentVersion && !incomplete && days < cfg.minDaysBetweenFullSync) {
     return { synced: false, reason: "throttled", nextInDays: cfg.minDaysBetweenFullSync - days };
   }
 
@@ -259,10 +289,11 @@ export async function checkAndSync(force = false) {
     throw e; // network/other error — bubble to caller as before
   }
 
-  // 3) Everything verified — apply atomically: tail/cats, then chunks, then policy.
+  // 3) Commit the verified artifact bundle, then rules and policy. The completion
+  // marker below advances only after every stage succeeds so failures can retry.
   await storeArtifacts(tailBuf, catsBuf, meta.categories, meta.version);
   await applyDnrChunks(cfg, prepared);
-  await applyPolicyRules();
+  await applyPolicyRulesNow();
 
   await chrome.storage.local.set({
     lastFullSync: Date.now(),

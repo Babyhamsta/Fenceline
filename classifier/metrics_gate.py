@@ -63,7 +63,7 @@ RECALL_MARGIN_PP = 3.0
 
 def load_rows(path: Path) -> List[Dict]:
     return [
-        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+        json.loads(line) for line in path.read_text(encoding="utf-8").split("\n") if line.strip()
     ]
 
 

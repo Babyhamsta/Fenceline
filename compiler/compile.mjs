@@ -371,7 +371,9 @@ async function main() {
   // 7) meta.json — version derives from content, so unchanged lists don't
   //    trigger fleet re-downloads.
   const dnrPlaced = chunks.reduce((a, c) => a + c.domains, 0);
-  const version = sha256(Buffer.concat([tailBuf, catsBuf])).slice(0, 16);
+  const version = sha256(
+    Buffer.concat([tailBuf, catsBuf, Buffer.from(JSON.stringify({ categories: catNames, chunks }))])
+  ).slice(0, 16);
   const meta = {
     version,
     generated: new Date().toISOString(),
@@ -390,7 +392,12 @@ async function main() {
   // it next to the lists and reference it (with its OWN version) so the
   // extension pulls the ~1.3 MB weights only when the model itself changes —
   // independent of the list version.
-  const modelSrc = join(ROOT, "classifier", "dist");
+  const exportedModel = join(ROOT, "classifier", "dist");
+  const modelSrc =
+    existsSync(join(exportedModel, "model.bin")) &&
+    existsSync(join(exportedModel, "model-meta.json"))
+      ? exportedModel
+      : join(ROOT, "extension", "model");
   if (existsSync(join(modelSrc, "model.bin")) && existsSync(join(modelSrc, "model-meta.json"))) {
     const modelBin = readFileSync(join(modelSrc, "model.bin"));
     const modelMetaRaw = readFileSync(join(modelSrc, "model-meta.json"));
@@ -400,7 +407,8 @@ async function main() {
       file: "model.bin",
       metaFile: "model-meta.json",
       version: JSON.parse(modelMetaRaw.toString("utf8")).version,
-      sha256: sha256(modelBin)
+      sha256: sha256(modelBin),
+      metaSha256: sha256(modelMetaRaw)
     };
     // Stage-2 fusion GBDT (optional). Published next to the text weights and
     // referenced so sync.js pulls it atomically with a model-version change.
@@ -416,6 +424,11 @@ async function main() {
     );
   }
 
+  // Publication includes independently synced metadata without forcing a full
+  // list download when only the model or no-pin baseline changes.
+  const publication = { ...meta };
+  delete publication.generated;
+  meta.publicationVersion = sha256(JSON.stringify(publication)).slice(0, 16);
   writeFileSync(join(DIST, "meta.json"), JSON.stringify(meta, null, 2));
   // Keep GitHub Pages from running Jekyll on the dist branch.
   writeFileSync(join(DIST, ".nojekyll"), "");
