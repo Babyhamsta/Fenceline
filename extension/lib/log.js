@@ -18,27 +18,43 @@ const DAY_CAP = 400; // days of byDay history kept
 
 let pending = null;
 let flushTimer = null;
+let loading = null;
+let generation = 0;
+let writes = Promise.resolve();
+let clearing = null;
 
 async function load() {
+  if (clearing) await clearing;
   if (pending) return pending;
-  const st = await chrome.storage.local.get(["stats", "events"]);
-  const stats = st.stats || { total: 0, byCategory: {}, byDomain: {}, byDay: {} };
-  if (!stats.bySource) stats.bySource = {}; // back-fill for pre-Tier-3 stores
-  pending = { stats, events: st.events || [] };
-  return pending;
+  if (!loading) {
+    const current = generation;
+    loading = chrome.storage.local
+      .get(["stats", "events"])
+      .then((st) => {
+        if (current !== generation) return null;
+        const stats = st.stats || { total: 0, byCategory: {}, byDomain: {}, byDay: {} };
+        if (!stats.bySource) stats.bySource = {}; // back-fill for pre-Tier-3 stores
+        pending = { stats, events: st.events || [] };
+        return pending;
+      })
+      .finally(() => {
+        if (current === generation) loading = null;
+      });
+  }
+  return loading;
 }
 
 function scheduleFlush() {
   if (flushTimer) return;
-  flushTimer = setTimeout(async () => {
+  flushTimer = setTimeout(() => {
     flushTimer = null;
-    if (!pending) return;
-    await chrome.storage.local.set(pending);
+    flushNow().catch((e) => console.warn("[fenceline] log flush failed", e));
   }, 250); // short: MV3 SWs can be suspended; keep the loss window tiny
 }
 
 export async function recordBlock(domain, category, source = "list") {
   const data = await load();
+  if (!data || data !== pending) return;
   const s = data.stats;
 
   s.total++;
@@ -70,7 +86,15 @@ export async function flushNow() {
     clearTimeout(flushTimer);
     flushTimer = null;
   }
-  if (pending) await chrome.storage.local.set(pending);
+  if (pending) {
+    const current = generation;
+    const snapshot = structuredClone(pending);
+    const write = writes.then(() => {
+      if (current === generation) return chrome.storage.local.set(snapshot);
+    });
+    writes = write.catch(() => {});
+    await write;
+  }
 }
 
 // Called after logs are cleared so cached stats don't get re-written.
@@ -80,4 +104,16 @@ export function resetCache() {
     flushTimer = null;
   }
   pending = null;
+  loading = null;
+  generation++;
+}
+
+export function clearLogs() {
+  resetCache();
+  const removal = writes.then(() => chrome.storage.local.remove(["stats", "events"]));
+  writes = removal.catch(() => {});
+  clearing = removal;
+  return removal.finally(() => {
+    if (clearing === removal) clearing = null;
+  });
 }

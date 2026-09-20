@@ -15,14 +15,14 @@
 
 import { check, ensureLoaded, isReady, listSize } from "./lib/tail.js";
 import { checkAndSync, applyPolicyRules } from "./lib/sync.js";
-import { recordBlock, resetCache } from "./lib/log.js";
+import { recordBlock, clearLogs } from "./lib/log.js";
 import { getConfig } from "./lib/config.js";
 import { ensureModelLoaded, isModelReady, modelVersion, decide } from "./lib/model.js";
 import { looksLikeProxyUrl } from "./lib/detect/proxy-url.js";
 import { detectGlyphCipher } from "./lib/detect/glyph-cipher.js";
 import { isSearchEngineSerp } from "./lib/detect/search-engine.js";
 import { svgHasForeignObject, svgHasExecutableContent } from "./lib/detect/svg-app.js";
-import { createPinStore, pinnedHit, buildNoPinHosts, NO_PIN_HOSTS } from "./lib/pins.js";
+import { createPinStore, buildNoPinHosts, NO_PIN_HOSTS, pinWorthy } from "./lib/pins.js";
 import { createLastRealHostStore } from "./lib/last-real-host.js";
 
 // The detection heuristics (proxy-url, glyph-cipher, svg-app) and the pin store
@@ -139,7 +139,7 @@ async function refreshNoPinHosts() {
   }
 }
 const pins = createPinStore(chrome.storage.local, () => effectiveNoPinHosts);
-refreshNoPinHosts(); // reload synced baseline + extras on every SW spin-up (incl. restarts)
+const noPinReady = refreshNoPinHosts();
 
 function hostnameOf(url) {
   try {
@@ -197,8 +197,9 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   }
 
   // Re-visit to a domain the model blocked earlier — block before it loads.
+  await noPinReady;
   const pinMap = await pins.load();
-  const ph = pinnedHit(hostname, pinMap);
+  const ph = pins.hit(hostname);
   if (ph) {
     const info = pinMap.get(ph);
     blockTab(details.tabId, ph, info.category, "model", info.confidence);
@@ -245,7 +246,10 @@ async function blockProxyHost(host, tabId, pin = true) {
   // URL-path hits pass pin=false: that signal is stateless (re-fires on every
   // navigation), and pinning a shared image CDN that merely embeds an encoded
   // URL in its path (Cloudflare/Cloudinary/imgproxy) would block it forever.
-  if (pin) await pins.pin(host, "proxy-bypass", 1);
+  if (pin) {
+    await noPinReady;
+    await pins.pin(host, "proxy-bypass", 1);
+  }
   if (tabId >= 0) {
     blockTab(tabId, host, "proxy-bypass", "proxy", null, true);
   } else {
@@ -427,7 +431,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       } else {
         await chrome.storage.local.set({ lastForcedCheck: Date.now() });
         try {
-          sendResponse(await checkAndSync(true));
+          const result = await checkAndSync(true);
+          await refreshNoPinHosts();
+          sendResponse(result);
         } catch (e) {
           sendResponse({ synced: false, error: String(e) });
         }
@@ -453,7 +459,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       // Glyph-cipher obfuscation is an evasion tell, not a content category, so
       // block it as proxy-bypass even when the content model is disabled.
       if (detectGlyphCipher(msg.text || "", msg.lang)) {
-        if (!isSub) await pins.pin(hostname, "proxy-bypass", 1);
+        if (!isSub) {
+          await noPinReady;
+          await pins.pin(hostname, "proxy-bypass", 1);
+        }
         blockTab(tabId, hostname, "proxy-bypass", "proxy", null, true);
         sendResponse({ blocked: true });
         return;
@@ -479,11 +488,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const doc = `${msg.title || ""} ${msg.meta || ""} ${msg.text || ""}`;
       const verdict = decide(doc, msg.structural, cfg.contentModelThreshold);
       if (verdict && sender.tab) {
-        // Pin only top-frame hits (the site's own content). A sub-frame hit
-        // blocks this visit but isn't pinned — a proxy just re-flags next time,
-        // while a legit page with one large same-origin section isn't broken
-        // forever.
-        if (!isSub) await pins.pin(hostname, verdict.category, verdict.confidence);
+        // Pin only top-frame hits (the site's own content) that structurally ARE
+        // an instance of the category (pinWorthy: they carry its functional
+        // element). A page that merely DISCUSSES the topic — a forum thread, a
+        // blog, a Q&A "how do I bypass the school proxy" — blocks this visit but
+        // is NOT pinned, so one false positive can't blanket a whole multi-tenant
+        // site (Quora/Reddit/Medium/Google Sites). A sub-frame hit is never
+        // pinned either (a proxy just re-flags next time).
+        if (!isSub && pinWorthy(verdict.category, msg.structural)) {
+          await noPinReady;
+          await pins.pin(hostname, verdict.category, verdict.confidence);
+        }
         blockTab(tabId, hostname, verdict.category, "model", verdict.confidence, true);
         sendResponse({ blocked: true });
       } else {
@@ -494,8 +509,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (!cfg.allowClearLogs) {
         sendResponse({ ok: false, error: "Clearing logs is disabled by policy." });
       } else {
-        await chrome.storage.local.remove(["stats", "events"]);
-        resetCache();
+        await clearLogs();
         sendResponse({ ok: true });
       }
     }

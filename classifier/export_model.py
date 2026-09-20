@@ -2,12 +2,12 @@
 dist/model.bin        float32 coef, row-major [n_classes x DIMS]
 dist/model-meta.json  classes, dims, intercepts, vectorizer id, version hash"""
 
-import hashlib
 import json
 from pathlib import Path
 
 import numpy as np
 
+from classifier.model_version import model_version
 from classifier.vectorize import DIMS
 
 ROOT = Path(__file__).resolve().parent
@@ -31,9 +31,7 @@ def main() -> None:
     dist.mkdir(parents=True, exist_ok=True)
     blob = coef.tobytes()
     (dist / "model.bin").write_bytes(blob)
-    version = hashlib.sha256(blob).hexdigest()[:16]
     meta = {
-        "version": version,
         "vectorizer": "fnv-hash-v1",
         "dims": DIMS,
         "classes": classes,
@@ -43,6 +41,8 @@ def main() -> None:
         "clean_label": cfg["clean_label"],
         "block_threshold": cfg.get("block_threshold", 0.9),
     }
+    version = model_version(blob, meta)
+    meta["version"] = version
     (dist / "model-meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     print(f"exported model.bin ({len(blob)} bytes), version {version}")
 

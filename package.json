@@ -6,7 +6,7 @@
   "description": "Self-hosted, on-device CIPA content filtering for managed devices.",
   "license": "MIT",
   "scripts": {
-    "test": "node test/selftest.mjs && node test/popup.mjs && node test/detect.mjs",
+    "test": "node test/selftest.mjs && node test/popup.mjs && node test/detect.mjs && node test/storage.mjs && node test/content-scan.mjs && node test/compiler-updates.mjs && node test/artifacts-sync.mjs",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,mjs}\"",
     "format:check": "prettier --check \"**/*.{js,mjs}\""

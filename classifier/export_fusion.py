@@ -19,7 +19,6 @@ faithful, and the JS interpreter only has to mirror this same walk (parity test)
 Run: python -m classifier.export_fusion
 """
 
-import hashlib
 import json
 import pickle
 import shutil
@@ -28,6 +27,7 @@ from pathlib import Path
 import numpy as np
 
 from classifier.extract import doc
+from classifier.model_version import model_version
 from classifier.train_gbdt import ENG, eng_vec, load
 from classifier.vectorize import DIMS, vectorize
 
@@ -149,9 +149,7 @@ def main() -> None:
     )
     binblob = coef_out.tobytes()
     (DIST / "model.bin").write_bytes(binblob)
-    version = hashlib.sha256(binblob + blob).hexdigest()[:16]
     meta = {
-        "version": version,
         "vectorizer": "fnv-hash-v1",
         "dims": DIMS,
         "classes": classes,
@@ -165,6 +163,8 @@ def main() -> None:
         "thr_text": THR_TEXT,
         "fusion_file": "fusion.json",
     }
+    version = model_version(binblob, meta, blob)
+    meta["version"] = version
     (DIST / "model-meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     print(f"wrote model.bin ({len(binblob)} bytes) + model-meta.json, version {version}")
 

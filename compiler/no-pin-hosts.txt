@@ -11,6 +11,16 @@
 # The extension ships this same set bundled as a pre-first-sync fallback
 # (extension/lib/pins.js). Districts extend it via the extraNoPinHosts policy
 # key without forking. One host per line; # starts a comment.
+#
+# This list is NOT the primary defence against one false positive blanketing a
+# whole site. That is the site-agnostic structural pin-gate (pins.js pinWorthy):
+# a content block only pins its host when the page carries the category's
+# FUNCTIONAL ELEMENT, so a discussion/blog/news/Q&A page about a topic blocks
+# this visit but never pins -- on any of the thousands of such hosts, with no
+# list. This list only adds what the gate can't catch: PATH-multitenant app/code
+# hosts where each tenant DOES render a real functional element under one shared
+# hostname (a hosted game canvas, a hosted proxy's URL box), so pinning the
+# shared host would blanket every unrelated tenant.
 
 # Google path-multitenant hosts.
 sites.google.com
@@ -20,6 +30,7 @@ docs.google.com
 drive.google.com
 translate.google.com
 webcache.googleusercontent.com
+groups.google.com
 
 # Archival / cache / reader services — they serve other sites' content.
 archive.org
@@ -40,3 +51,55 @@ statically.io
 raw.githubusercontent.com
 gitcdn.link
 gitcdn.xyz
+
+# App / deploy / sandbox hosts: each tenant renders its OWN site, often with a
+# real functional element (a hosted proxy's URL box, a hosted game's canvas), so
+# the structural pin-gate alone wouldn't spare the shared origin.
+github.io
+gitlab.io
+pages.dev
+workers.dev
+vercel.app
+netlify.app
+web.app
+firebaseapp.com
+herokuapp.com
+glitch.me
+repl.co
+replit.app
+replit.dev
+codepen.io
+codesandbox.io
+stackblitz.com
+jsfiddle.net
+surge.sh
+onrender.com
+pythonanywhere.com
+itch.io
+neocities.org
+
+# Code / repo hosts — one repo is not the whole forge.
+github.com
+gitlab.com
+bitbucket.org
+sourceforge.net
+codeberg.org
+huggingface.co
+
+# User-content forums / Q&A / blogs — one thread/post/answer is not the site.
+# (Mostly already spared by the structural pin-gate; listed as defence-in-depth.)
+quora.com
+reddit.com
+news.ycombinator.com
+stackoverflow.com
+stackexchange.com
+superuser.com
+serverfault.com
+askubuntu.com
+medium.com
+substack.com
+wordpress.com
+blogspot.com
+tumblr.com
+dev.to
+pastebin.com

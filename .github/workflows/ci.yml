@@ -48,6 +48,12 @@ jobs:
         run: node test/popup.mjs
       - name: Evasion detectors
         run: node test/detect.mjs
+      - name: Runtime and publication regressions
+        run: |
+          node test/storage.mjs
+          node test/content-scan.mjs
+          node test/compiler-updates.mjs
+          node test/artifacts-sync.mjs
 
   python-tests:
     name: python-tests

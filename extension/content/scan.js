@@ -39,12 +39,13 @@
   const SETTLE_MS = 1200; // wait for content to settle after a change
   const MAX_SCANS = 12; // hard per-page cap — anti-spam backstop
 
-  let lastText = "";
-  let lastScanAt = 0;
+  let lastSignature = null;
+  let lastScanAt = -Infinity;
   let scans = 0;
   let timer = null;
   let busy = false;
   let observer = null;
+  let stopped = false;
 
   const clean = (s) => (s || "").replace(DATA_URI, " ").replace(/\s+/g, " ").trim();
 
@@ -78,7 +79,8 @@
   }
 
   async function doScan() {
-    if (scans >= MAX_SCANS) return stop();
+    if (stopped || scans >= MAX_SCANS) return stop();
+    lastScanAt = Date.now();
     // Size gate (sub-frames only) evaluated NOW, so a content frame that was
     // hidden/unsized at load but is large now still gets scanned.
     if (isSubframe && (window.innerWidth < 500 || window.innerHeight < 380)) return;
@@ -92,9 +94,9 @@
     const bodyChars = rec.text.replace(/\s+/g, "").length;
     const metaTokens = (rec.title + " " + rec.meta).trim().split(/\s+/).filter(Boolean).length;
     if (bodyChars < 80 && metaTokens < 6) return;
-    if (rec.text === lastText) return; // content unchanged since last scan
-    lastText = rec.text;
-    lastScanAt = Date.now();
+    const signature = JSON.stringify(rec);
+    if (signature === lastSignature) return;
+    lastSignature = signature;
     scans++;
     busy = true;
     try {
@@ -104,12 +106,14 @@
       stop();
     } finally {
       busy = false;
+      if (scans >= MAX_SCANS) stop();
     }
   }
 
-  // Debounce content changes, but never scan more often than COOLDOWN_MS.
+  // Keep the first pending deadline: continuous DOM activity must not postpone
+  // scans forever. Each pass reads the latest page and respects the cooldown.
   function schedule() {
-    if (timer) clearTimeout(timer);
+    if (stopped || timer !== null) return;
     const wait = Math.max(SETTLE_MS, COOLDOWN_MS - (Date.now() - lastScanAt));
     timer = setTimeout(() => {
       timer = null;
@@ -119,21 +123,47 @@
   }
 
   function stop() {
-    if (timer) clearTimeout(timer);
+    stopped = true;
+    if (timer !== null) clearTimeout(timer);
+    timer = null;
     if (observer) observer.disconnect();
     observer = null;
   }
 
   function startObserving() {
-    if (!document.body || observer) return;
+    if (stopped || !document.documentElement || observer) return;
     observer = new MutationObserver(schedule);
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: [
+        "lang",
+        "content",
+        "name",
+        "property",
+        "src",
+        "href",
+        "type",
+        "role",
+        "id",
+        "placeholder",
+        "aria-label",
+        "autocomplete",
+        "value",
+        "onclick",
+        "class",
+        "style",
+        "hidden",
+        "width",
+        "height"
+      ]
+    });
   }
 
   // First scan after the page settles, then throttled re-scans on content swaps.
-  setTimeout(() => {
-    doScan();
-    startObserving();
-  }, SETTLE_MS);
-  if (!document.body) addEventListener("DOMContentLoaded", startObserving);
+  startObserving();
+  schedule();
+  if (!document.documentElement) addEventListener("DOMContentLoaded", startObserving);
 })();
